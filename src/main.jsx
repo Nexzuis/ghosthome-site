@@ -1,32 +1,38 @@
 import React from "react";
-import { createRoot } from "react-dom/client";
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
-import "./index.css";
+import ReactDOM from "react-dom/client";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import RootLayout from "./routes/RootLayout.jsx";
+
+// Make sure these point to different files:
 import Home from "./routes/Home.jsx";
 import Features from "./routes/Features.jsx";
 import Packages from "./routes/Packages.jsx";
-import Gallery from "./routes/Gallery.jsx";
-import About from "./routes/About.jsx";
+import About from "./routes/About.jsx";   // ← not Features.jsx by accident
 import Contact from "./routes/Contact.jsx";
+import "./index.css";
 
-const router = createBrowserRouter([
-  {
-    path: "/",
-    element: <RootLayout />,
-    children: [
-      { index: true, element: <Home /> },
-      { path: "features", element: <Features /> },
-      { path: "packages", element: <Packages /> },
-      { path: "gallery", element: <Gallery /> },
-      { path: "about", element: <About /> },
-      { path: "contact", element: <Contact /> },
-    ],
-  },
-]);
+function NotFound() {
+  return (
+    <div className="mx-auto max-w-3xl p-8">
+      <h1 className="mb-2 text-2xl font-bold text-slate-900">Page not found</h1>
+      <p className="text-slate-600">Use the navigation above to continue.</p>
+    </div>
+  );
+}
 
-createRoot(document.getElementById("root")).render(
+ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <RouterProvider router={router} />
+    <BrowserRouter>
+      <Routes>
+        <Route element={<RootLayout />}>
+          <Route index element={<Home />} />
+          <Route path="/features" element={<Features />} /> {/* ← Features component */}
+          <Route path="/packages" element={<Packages />} />
+          <Route path="/about" element={<About />} />       {/* ← About component */}
+          <Route path="/contact" element={<Contact />} />
+          <Route path="*" element={<NotFound />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
   </React.StrictMode>
 );
