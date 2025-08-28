@@ -89,11 +89,16 @@ export default function SecureStreet() {
               <span className="text-emerald-600">smart automations</span>
             </h1>
             <p className="mt-3 text-slate-600">
-              Traditional alarms shout “zone.” Ghosthome <strong>acts</strong>:
-              AI detects a person/vehicle, sends a <strong>snapshot</strong>,
-              rings an <strong>indoor chime</strong>, fires{" "}
-              <strong>lights/sirens</strong>, and can <strong>escalate</strong> to
-              armed response.
+              Alarm and armed response companies often charge{" "}
+              <strong>thousands</strong> for what a community can run together.{" "}
+              <strong>Community-driven, affordable security</strong> for your street.{" "}
+              <span className="font-semibold text-emerald-700">
+                Get us involved in your community now!
+              </span>{" "}
+              Traditional alarms shout “zone.” Ghosthome <strong>acts</strong>: AI
+              detects a person/vehicle, sends a <strong>snapshot</strong>, rings an{" "}
+              <strong>indoor chime</strong>, fires <strong>lights/sirens</strong>, and
+              can escalate to armed response.
             </p>
 
             <div className="mt-5 flex flex-wrap gap-3">
@@ -107,7 +112,7 @@ export default function SecureStreet() {
                 WhatsApp us
               </a>
               <Link
-                to="/packages"
+                to="/packages#street"
                 className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-slate-700 hover:bg-slate-50"
               >
                 <Camera className="h-5 w-5" />
@@ -174,14 +179,14 @@ export default function SecureStreet() {
               Live detection demo (autoplay, muted).
             </div>
 
-            {/* NEW: static image slot under the video */}
+            {/* Static image slot under the video */}
             <div className="mt-4">
               <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-600">
                 <Map className="h-4 w-4" />
                 Street coverage overview
               </div>
               <div className="aspect-video w-full overflow-hidden rounded-xl bg-white ring-1 ring-slate-200">
-                {/* Place your image at: public/images/secure-street-overview.jpg */}
+                {/* Place your image at: public/images/secure-street-overview.jpg (or .png) */}
                 <img
                   src="/images/secure-street-overview.jpg"
                   alt="Street coverage diagram showing intersection, cul-de-sac, and straight-road camera placement"

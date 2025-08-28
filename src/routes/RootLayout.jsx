@@ -1,14 +1,33 @@
-import React, { useState } from "react";
-import { NavLink, Outlet, Link } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { NavLink, Outlet, Link, useLocation } from "react-router-dom";
 import { Menu, X } from "lucide-react";
+import PackagesInlineNav from "../components/PackagesInlineNav.jsx";
+import CommunityStreetPackages from "../components/CommunityStreetPackages.jsx";
 
 /**
  * Site chrome: header (brand button + nav), footer, and Outlet.
  * - Brand button: ghost logo + "Ghosthome" routes to "/"
- * - Added "Secure Street" to the main nav so you can reach /street easily
+ * - Keeps your existing pages untouched.
+ * - When the current route is "/packages", we append a tiny toolbar
+ *   (Back to Features / Street page) and the Community Street Packages section
+ *   AFTER the existing Packages content — without modifying your Packages.jsx file.
+ * - Hash-aware scroll: visiting /packages#street scrolls to the Street section.
  */
 export default function RootLayout() {
   const [open, setOpen] = useState(false);
+  const location = useLocation();
+
+  useEffect(() => {
+    // Smooth-scroll to hash targets like /packages#street
+    if (location.pathname === "/packages" && location.hash) {
+      const id = location.hash.replace("#", "");
+      const el = document.getElementById(id);
+      if (el) {
+        // delay ensures the section is in the DOM after Outlet renders
+        setTimeout(() => el.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
+      }
+    }
+  }, [location]);
 
   const NavItem = ({ to, label }) => (
     <NavLink
@@ -86,18 +105,29 @@ export default function RootLayout() {
       {/* CONTENT */}
       <main className="mx-auto max-w-7xl px-4">
         <Outlet />
+
+        {/* Append-only: show extra bits ONLY on /packages, below the existing page content */}
+        {location.pathname === "/packages" && (
+          <>
+            <PackagesInlineNav />
+            <CommunityStreetPackages />
+          </>
+        )}
       </main>
 
       {/* FOOTER */}
       <footer className="mt-16 border-t border-slate-200 bg-white">
         <div className="mx-auto max-w-7xl px-4 py-8 text-sm text-slate-600">
           <p>
-            © 2025 Ghosthome • Security & Automation that acts, not just records •
-            {" "}A brand of Alpha Research CC
+            © 2025 Ghosthome • Security & Automation that acts, not just records •{" "}
+            A brand of Alpha Research CC
           </p>
           <p className="mt-1">
-            WhatsApp: <a className="underline" href="https://wa.me/27794950855">+27 79 495 0855</a> •
-            {" "}Email: <span className="underline">ian@ghosthome.co.za</span>
+            WhatsApp:{" "}
+            <a className="underline" href="https://wa.me/27794950855">
+              +27 79 495 0855
+            </a>{" "}
+            • Email: <span className="underline">ian@ghosthome.co.za</span>
           </p>
         </div>
       </footer>
