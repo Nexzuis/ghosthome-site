@@ -111,6 +111,7 @@ export default function SecureStreet() {
                 <PhoneCall className="h-5 w-5" />
                 WhatsApp us
               </a>
+              {/* Deep-link directly to the Street section on Packages */}
               <Link
                 to="/packages#street"
                 className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-slate-700 hover:bg-slate-50"
@@ -496,8 +497,7 @@ function ModeChip({ icon, label, active, onClick }) {
 
 function ExplainerChip({ icon, label, text, tone = "emerald" }) {
   const tones = {
-    emerald:
-      "bg-emerald-50 text-emerald-800 ring-1 ring-inset ring-emerald-200",
+    emerald: "bg-emerald-50 text-emerald-800 ring-1 ring-inset ring-emerald-200",
     amber: "bg-amber-50 text-amber-800 ring-1 ring-inset ring-amber-200",
     rose: "bg-rose-50 text-rose-800 ring-1 ring-inset ring-rose-200",
     indigo: "bg-indigo-50 text-indigo-800 ring-1 ring-inset ring-indigo-200",

@@ -7,10 +7,9 @@ import CommunityStreetPackages from "../components/CommunityStreetPackages.jsx";
 /**
  * Site chrome: header (brand button + nav), footer, and Outlet.
  * - Brand button: ghost logo + "Ghosthome" routes to "/"
- * - Keeps your existing pages untouched.
- * - When the current route is "/packages", we append a tiny toolbar
- *   (Back to Features / Street page) and the Community Street Packages section
- *   AFTER the existing Packages content — without modifying your Packages.jsx file.
+ * - Adds a top-of-page call button: "Call 079 495 0855"
+ * - On "/packages", we append a tiny toolbar (Back to Features / Street page)
+ *   and the Community Street Packages section AFTER the existing Packages content.
  * - Hash-aware scroll: visiting /packages#street scrolls to the Street section.
  */
 export default function RootLayout() {
@@ -23,7 +22,7 @@ export default function RootLayout() {
       const id = location.hash.replace("#", "");
       const el = document.getElementById(id);
       if (el) {
-        // delay ensures the section is in the DOM after Outlet renders
+        // ensure section is rendered after Outlet before scrolling
         setTimeout(() => el.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
       }
     }
@@ -36,9 +35,7 @@ export default function RootLayout() {
       className={({ isActive }) =>
         [
           "rounded-lg px-3 py-2 text-sm font-semibold",
-          isActive
-            ? "bg-emerald-600 text-white"
-            : "text-slate-700 hover:bg-slate-100",
+          isActive ? "bg-emerald-600 text-white" : "text-slate-700 hover:bg-slate-100",
         ].join(" ")
       }
     >
@@ -51,20 +48,32 @@ export default function RootLayout() {
       {/* HEADER */}
       <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
-          {/* Brand button (logo + text) */}
-          <Link
-            to="/"
-            className="inline-flex items-center gap-2 rounded-xl px-2 py-1 text-slate-800 hover:bg-slate-100"
-            aria-label="Ghosthome Home"
-          >
-            <img
-              src="/logo.png"
-              onError={(e) => (e.currentTarget.src = "/logo192.png")}
-              alt="Ghosthome"
-              className="h-7 w-7 rounded-full"
-            />
-            <span className="text-base font-bold">Ghosthome</span>
-          </Link>
+          {/* Left: Brand + Call button */}
+          <div className="flex items-center gap-3">
+            {/* Brand button (logo + text) */}
+            <Link
+              to="/"
+              className="inline-flex items-center gap-2 rounded-xl px-2 py-1 text-slate-800 hover:bg-slate-100"
+              aria-label="Ghosthome Home"
+            >
+              <img
+                src="/logo.png"
+                onError={(e) => (e.currentTarget.src = "/logo192.png")}
+                alt="Ghosthome"
+                className="h-7 w-7 rounded-full"
+              />
+              <span className="text-base font-bold">Ghosthome</span>
+            </Link>
+
+            {/* Call pill */}
+            <a
+              href="tel:+27794950855"
+              className="inline-flex items-center rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 sm:text-sm"
+              aria-label="Call 079 495 0855"
+            >
+              Call 079 495 0855
+            </a>
+          </div>
 
           {/* Desktop nav */}
           <nav className="hidden items-center gap-2 md:flex">
@@ -119,15 +128,11 @@ export default function RootLayout() {
       <footer className="mt-16 border-t border-slate-200 bg-white">
         <div className="mx-auto max-w-7xl px-4 py-8 text-sm text-slate-600">
           <p>
-            © 2025 Ghosthome • Security & Automation that acts, not just records •{" "}
-            A brand of Alpha Research CC
+            © 2025 Ghosthome • Security & Automation that acts, not just records • A brand of Alpha Research CC
           </p>
           <p className="mt-1">
-            WhatsApp:{" "}
-            <a className="underline" href="https://wa.me/27794950855">
-              +27 79 495 0855
-            </a>{" "}
-            • Email: <span className="underline">ian@ghosthome.co.za</span>
+            WhatsApp: <a className="underline" href="https://wa.me/27794950855">+27 79 495 0855</a> •
+            Email: <span className="underline">ian@ghosthome.co.za</span>
           </p>
         </div>
       </footer>

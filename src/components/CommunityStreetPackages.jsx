@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { Shield, Camera, Route as RouteIcon } from "lucide-react";
 
 /**
@@ -7,7 +8,7 @@ import { Shield, Camera, Route as RouteIcon } from "lucide-react";
  * - No prices. Max 2 cameras per package (plus a Custom option).
  * - Dark-neutral cards (not pure black); readable chips.
  * - Local filter + sort chips that do NOT affect the rest of the page.
- * - Drop-in section that can be appended below your existing Packages content.
+ * - Drop-in section that is appended below existing Packages content.
  */
 export default function CommunityStreetPackages() {
   const DATA = useMemo(
@@ -90,19 +91,29 @@ export default function CommunityStreetPackages() {
   }, [DATA, activeTags, sortBy]);
 
   return (
-    <section id="street" className="mt-10">
-      <div className="mb-4">
-        <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200">
-          <Shield className="h-4 w-4" />
-          Community Street Packages
+    <section id="street" className="mt-10 scroll-mt-24 md:scroll-mt-28">
+      {/* Heading + tiny back link */}
+      <div className="mb-4 flex items-center justify-between">
+        <div>
+          <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200">
+            <Shield className="h-4 w-4" />
+            Community Street Packages
+          </div>
+          <h3 className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
+            Smart, community-run street security (max 2 cameras)
+          </h3>
+          <p className="mt-1 text-sm text-slate-600">
+            AI detect → snapshot + indoor chime → lights/siren deter → pan/tilt tracking → optional
+            armed-response link. Wi-Fi dependent; mesh/UPS options available.
+          </p>
         </div>
-        <h3 className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
-          Smart, community-run street security (max 2 cameras)
-        </h3>
-        <p className="mt-1 text-sm text-slate-600">
-          AI detect → snapshot + indoor chime → lights/siren deter → pan/tilt tracking → optional
-          armed-response link. Wi-Fi dependent; mesh/UPS options available.
-        </p>
+
+        <Link
+          to="/street"
+          className="rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+        >
+          ← Back to Street
+        </Link>
       </div>
 
       {/* Local filter + sort */}
