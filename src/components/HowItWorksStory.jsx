@@ -1,5 +1,5 @@
 // src/components/HowItWorksStory.jsx
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Camera,
@@ -10,17 +10,50 @@ import {
   PhoneCall,
   PlayCircle,
 } from "lucide-react";
+import { motion } from "framer-motion";
 
 /**
  * Interactive “How it works” story + right-side controls.
  * Includes a hover-flip Ghosthome logo card that links to /packages.
  */
 export default function HowItWorksStory() {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [stepIndex, setStepIndex] = useState(-1);
+
+  const steps = [
+    "Detect",
+    "Alert",
+    "Deter",
+    "Track",
+    "Automate",
+    "Escalate",
+    "Call armed response",
+  ];
+
+  const timerRef = useRef(null);
+
+  const startDemo = () => {
+    clearInterval(timerRef.current);
+    setIsPlaying(true);
+    setStepIndex(-1);
+  };
+
+  useEffect(() => {
+    if (!isPlaying) return;
+    let i = -1;
+    timerRef.current = setInterval(() => {
+      i += 1;
+      setStepIndex(i);
+      if (i >= steps.length) {
+        clearInterval(timerRef.current);
+        setIsPlaying(false);
+      }
+    }, 900);
+    return () => clearInterval(timerRef.current);
+  }, [isPlaying, steps.length]);
+
   return (
-    <section
-      id="how-it-works"
-      className="mx-auto mt-8 max-w-6xl rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm"
-    >
+    <section className="mt-12">
       {/* Heading */}
       <div className="mb-4 flex items-center gap-3">
         <div className="grid h-9 w-9 place-items-center rounded-full bg-emerald-50 ring-1 ring-emerald-100">
@@ -33,7 +66,7 @@ export default function HowItWorksStory() {
 
       <div className="grid gap-6 md:grid-cols-3">
         {/* LEFT / STORY */}
-        <div className="md:col-span-2 space-y-4">
+        <div className="space-y-4 md:col-span-2">
           <h4 className="text-xl font-semibold text-slate-900">
             Your alarm, but <span className="text-emerald-600">smarter</span>
           </h4>
@@ -46,67 +79,66 @@ export default function HowItWorksStory() {
             between guessing and acting.
           </p>
 
-          {/* Story chips */}
+          {/* Story chips (colours reintroduced per step) */}
           <div className="grid gap-3 sm:grid-cols-2">
             <StoryChip
               icon={<Camera className="h-4 w-4" />}
               badge="1. Detect"
               text="AI tags people, pets, vehicles — cutting false alarms."
+              tone="emerald"
             />
             <StoryChip
               icon={<BellRing className="h-4 w-4" />}
               badge="2. Alert"
-              text="Snapshot + indoor chime (night-mode) so you actually wake up."
+              text="Snapshot in your notification + indoor chime at night."
+              tone="amber"
             />
             <StoryChip
               icon={<Shield className="h-4 w-4" />}
               badge="3. Deter"
-              text="Spotlight + on-camera siren or lights turn on automatically."
-              tone="red"
+              text="Spotlights and sirens can fire automatically."
+              tone="rose"
             />
             <StoryChip
               icon={<ScanEye className="h-4 w-4" />}
               badge="4. Track"
-              text="Pan/tilt models follow movement. Other cams continue tracking."
-              tone="blue"
+              text="Pan/tilt models follow the target in view."
+              tone="indigo"
             />
             <StoryChip
               icon={<Lightbulb className="h-4 w-4" />}
               badge="5. Automate"
-              text="Turn lights, plugs and more on with rules (line-crossing, zones)."
-              tone="amber"
+              text="Smart lights, plugs and switches respond instantly."
+              tone="sky"
             />
             <StoryChip
               icon={<PhoneCall className="h-4 w-4" />}
               badge="6. Escalate"
-              text="Link to normal alarm panel & dispatch armed response."
-              tone="slate"
+              text="Link to your alarm panel / armed response when needed."
+              tone="violet"
             />
           </div>
 
-          {/* Requirements / notes */}
-          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-600">
+          {/* Notes */}
+          <ul className="mt-2 list-disc space-y-1 pl-6 text-sm text-slate-600">
+            <li>Fewer false alerts via smart zones and line crossing.</li>
+            <li>Always-on day/night modes, tuned to how you live.</li>
             <li>
-              Works during load-shedding: a small router/inverter UPS keeps the
-              system online (wired-camera UPS can be quoted at a{" "}
-              <strong>very low price — recommended</strong>).
-            </li>
-            <li>
-              <strong>Wi-Fi needs to reach each camera</strong> (unless you pick
-              4G models). We can add mesh/extenders as part of install.
+              Wi-Fi dependent — extenders/mesh may be needed for coverage. We
+              can add mesh/extenders as part of install.
             </li>
           </ul>
 
           <div className="mt-4 flex flex-wrap gap-3">
             <Link
               to="/packages"
-              className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-white shadow-sm hover:bg-emerald-700"
+              className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-white shadow-sm hover:bg-emerald-700"
             >
               Build my system
             </Link>
             <Link
               to="/features"
-              className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-slate-700 hover:bg-slate-50"
+              className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-slate-700 hover:bg-slate-50"
             >
               Explore features
             </Link>
@@ -114,7 +146,7 @@ export default function HowItWorksStory() {
         </div>
 
         {/* RIGHT / CONTROLS + FLIP CARD */}
-        <div className="md:col-span-1 space-y-4">
+        <div className="space-y-4 md:col-span-1">
           <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
             <div className="mb-2 flex items-center justify-between">
               <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
@@ -124,11 +156,7 @@ export default function HowItWorksStory() {
               <button
                 type="button"
                 className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-700"
-                onClick={() =>
-                  alert(
-                    "Tip: use the Packages page video at the top for a live feel. (This button is a placeholder.)"
-                  )
-                }
+                onClick={startDemo}
               >
                 <PlayCircle className="h-4 w-4" />
                 Play
@@ -162,38 +190,79 @@ export default function HowItWorksStory() {
 
                   {/* BACK */}
                   <div
-                    className="absolute inset-0 grid place-items-center rounded-2xl bg-emerald-600 px-4 text-center text-white [transform:rotateY(180deg)] [backface-visibility:hidden]"
+                    className="absolute inset-0 grid place-items-center gap-1 rounded-2xl bg-slate-900 text-white [transform:rotateY(180deg)] [backface-visibility:hidden]"
                     style={{
                       transform: "rotateY(180deg)",
                       backfaceVisibility: "hidden",
                     }}
                   >
-                    <div>
-                      <p className="text-sm/5 font-semibold">
-                        Build a system that{" "}
-                        <span className="underline decoration-white/60">
-                          acts
-                        </span>
-                        —not just records.
-                      </p>
-                      <p className="mt-1 text-xs text-emerald-100">
-                        Packages from R3 999 → full custom installs.
-                      </p>
-                      <div className="mt-3 inline-flex items-center gap-2 rounded-xl bg-white px-3 py-1.5 text-sm font-semibold text-emerald-700">
-                        Click me
-                      </div>
+                    <p className="text-xs uppercase tracking-wide text-emerald-300">
+                      Ghosthome
+                    </p>
+                    <p className="px-6 text-center text-sm">
+                      Security that <span className="text-emerald-300">acts</span>
+                      —not just records.
+                    </p>
+                    <p className="mt-1 text-xs text-emerald-100">
+                      Packages from R3 999 → full custom installs.
+                    </p>
+                    <div className="mt-3 inline-flex items-center gap-2 rounded-xl bg-white px-3 py-1.5 text-sm font-semibold text-emerald-700">
+                      Click me
                     </div>
                   </div>
                 </div>
               </div>
             </Link>
 
+            {/* Auto-play Flashcards Demo */}
+            <div className="mt-4">
+              <div className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-500">
+                Demo sequence
+              </div>
+
+              {/* Make last item span full width and keep on one line */}
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {steps.map((label, idx) => {
+                  const isLast = idx === steps.length - 1;
+                  return (
+                    <motion.div
+                      key={label}
+                      initial={{ rotateY: 0, opacity: 0.2, y: 6 }}
+                      animate={{
+                        rotateY: stepIndex === idx ? 180 : 0,
+                        opacity: stepIndex >= idx ? 1 : 0.5,
+                        y: stepIndex >= idx ? 0 : 6,
+                      }}
+                      transition={{ type: "spring", stiffness: 260, damping: 20 }}
+                      className={[
+                        "h-10 rounded-lg border text-sm font-semibold flex items-center justify-center px-3 whitespace-nowrap",
+                        stepIndex >= idx
+                          ? "bg-emerald-600 text-white border-emerald-600"
+                          : "bg-white text-emerald-700 border-emerald-200",
+                        isLast ? "col-span-2 sm:col-span-3" : "",
+                      ].join(" ")}
+                      aria-live="polite"
+                    >
+                      {label}
+                    </motion.div>
+                  );
+                })}
+              </div>
+
+              {!isPlaying && (
+                <p className="mt-2 text-xs text-slate-500">
+                  Click <span className="font-semibold text-slate-700">Play</span> to
+                  animate through: Detect → Alert → Deter → Track → Automate → Escalate
+                  → Call armed response.
+                </p>
+              )}
+            </div>
+
             <p className="mt-3 text-xs text-slate-500">
               Tip: set{" "}
               <strong className="text-slate-700">always-on night mode</strong>{" "}
               with indoor chime + snapshot so you actually wake up when a{" "}
-              <strong className="text-slate-700">person</strong> enters your
-              property.
+              <strong className="text-slate-700">person</strong> enters your property.
             </p>
           </div>
         </div>
@@ -205,17 +274,19 @@ export default function HowItWorksStory() {
 function StoryChip({ icon, badge, text, tone = "emerald" }) {
   const tones = {
     emerald:
-      "bg-emerald-50 ring-emerald-100 text-emerald-700 dark:text-emerald-800",
-    red: "bg-rose-50 ring-rose-100 text-rose-700 dark:text-rose-800",
-    blue: "bg-sky-50 ring-sky-100 text-sky-700 dark:text-sky-800",
-    amber: "bg-amber-50 ring-amber-100 text-amber-800",
-    slate: "bg-slate-50 ring-slate-200 text-slate-700",
+      "bg-emerald-50 text-emerald-800 ring-1 ring-inset ring-emerald-200",
+    amber: "bg-amber-50 text-amber-800 ring-1 ring-inset ring-amber-200",
+    rose: "bg-rose-50 text-rose-800 ring-1 ring-inset ring-rose-200",
+    indigo: "bg-indigo-50 text-indigo-800 ring-1 ring-inset ring-indigo-200",
+    sky: "bg-sky-50 text-sky-800 ring-1 ring-inset ring-sky-200",
+    violet:
+      "bg-violet-50 text-violet-800 ring-1 ring-inset ring-violet-200",
   };
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+    <div className="rounded-xl border border-slate-200 bg-white p-4">
       <div
-        className={`mb-2 inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${tones[tone]}`}
+        className={`mb-2 inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-xs font-semibold ${tones[tone]}`}
       >
         <span className="grid h-4 w-4 place-items-center">{icon}</span>
         {badge}

@@ -1,396 +1,493 @@
-import React, { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useState, useMemo } from "react";
+import { motion } from "framer-motion";
 import {
+  PhoneCall,
   Mail,
-  Phone,
-  MessageCircle,
-  MapPin,
-  Clock,
+  ScanEye,
+  Lightbulb,
   Shield,
-  CheckCircle2,
-  AlertCircle,
-  ChevronRight,
+  BellRing,
+  Megaphone,
+  Route as RouteIcon,
+  Sun,
+  Moon,
+  Home,
+  Car,
+  Sparkles,
 } from "lucide-react";
 
+/**
+ * Contact (original + fun, interactive)
+ * - Keeps the site's visual language (whites/greys/slates + emerald accents)
+ * - No new libraries
+ * - Full mailto submit from THIS file (no reliance on ContactForm.jsx)
+ * - Flip cards + toggles to make it lively
+ */
 export default function Contact() {
-  const [fields, setFields] = useState({
+  // Form state
+  const [form, setForm] = useState({
     name: "",
-    email: "",
     phone: "",
+    email: "",
     suburb: "",
-    reason: "Quote",
     message: "",
-    botTrap: "", // honeypot
   });
-  const [error, setError] = useState("");
-  const [ok, setOk] = useState("");
 
-  const emailTo = "ian@ghosthome.co.za";
-  const waNumber = "27794950855";
+  // Interactive toggles (informative, included in the email subject/body)
+  const [projectType, setProjectType] = useState("home"); // home | street
+  const [power, setPower] = useState("wired"); // wired | wirefree
+  const [mode, setMode] = useState("night"); // day | night
+  const [contactPref, setContactPref] = useState("whatsapp"); // whatsapp | email
 
-  const isValid = useMemo(() => {
-    return fields.name.trim() && fields.email.trim() && fields.message.trim();
-  }, [fields]);
+  const [sending, setSending] = useState(false);
 
-  function onChange(e) {
+  const onChange = (e) => {
     const { name, value } = e.target;
-    setFields((s) => ({ ...s, [name]: value }));
-    setError("");
-    setOk("");
-  }
+    setForm((f) => ({ ...f, [name]: value }));
+  };
 
-  function asMailto() {
-    const subject = `[Ghosthome] ${fields.reason} — ${fields.name}`;
-    const bodyLines = [
-      `Name: ${fields.name}`,
-      `Email: ${fields.email}`,
-      fields.phone ? `Phone: ${fields.phone}` : null,
-      fields.suburb ? `Suburb/Area: ${fields.suburb}` : null,
-      `Reason: ${fields.reason}`,
-      "",
-      fields.message,
-      "",
-      "— sent from ghosthome.co.za/contact",
-    ].filter(Boolean);
+  const subject = useMemo(() => {
+    const who = projectType === "street" ? "Street" : "Home";
+    const pow = power === "wirefree" ? "Wire-free" : "Wired";
+    const md = mode === "day" ? "Day" : "Night";
+    return `Ghosthome enquiry (${who}, ${pow}, ${md}) — ${form.name || "New lead"}`;
+  }, [projectType, power, mode, form.name]);
 
-    const body = bodyLines.join("\n");
-    return `mailto:${emailTo}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-  }
-
-  function asWhatsAppLink() {
-    const text = [
-      `Hi Ghosthome 👋`,
-      `I'd like help with: ${fields.reason}`,
-      "",
-      `Name: ${fields.name}`,
-      fields.suburb ? `Suburb/Area: ${fields.suburb}` : null,
-      fields.phone ? `Phone: ${fields.phone}` : null,
-      fields.email ? `Email: ${fields.email}` : null,
-      "",
-      fields.message,
-    ]
-      .filter(Boolean)
-      .join("\n");
-
-    return `https://wa.me/${waNumber}?text=${encodeURIComponent(text)}`;
-  }
-
-  function handleSubmit(e) {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    if (fields.botTrap) {
-      // silently drop bots
+    if (!form.name || !form.phone || !form.message) {
+      alert("Please add your name, phone number, and a short message.");
       return;
     }
-    if (!isValid) {
-      setError("Please fill your name, email, and message.");
-      return;
-    }
-    setOk("Opening your email app…");
-    window.location.href = asMailto();
-  }
+    setSending(true);
+
+    const bodyLines = [
+      `Name: ${form.name}`,
+      `Phone: ${form.phone}`,
+      `Email: ${form.email || "-"}`,
+      `Suburb/Area: ${form.suburb || "-"}`,
+      `Project Type: ${projectType}`,
+      `Power: ${power}`,
+      `Preferred Mode: ${mode}`,
+      `Contact Preference: ${contactPref}`,
+      "",
+      "Message:",
+      form.message,
+    ];
+
+    const mailto = `mailto:ian@ghosthome.co.za?subject=${encodeURIComponent(
+      subject
+    )}&body=${encodeURIComponent(bodyLines.join("\n"))}`;
+
+    window.location.href = mailto;
+    setTimeout(() => setSending(false), 800);
+  };
 
   return (
-    <div className="mx-auto max-w-7xl px-4 pb-20 pt-10 sm:px-6 lg:px-8">
-      {/* Watermark + subtle motion */}
-      <style>{`
-        @keyframes floaty { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-6px) } }
-        .floaty { animation: floaty 5s ease-in-out infinite }
-        @media (prefers-reduced-motion: reduce) { .floaty { animation: none } }
-      `}</style>
-
+    <main className="mx-auto max-w-7xl px-4 py-10">
       {/* HERO */}
-      <div className="relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:p-10">
-        {/* Faint logo watermark */}
-        <div className="pointer-events-none absolute -right-10 -top-10 hidden h-48 w-48 select-none rounded-full bg-emerald-50 ring-1 ring-emerald-100/50 md:block">
-          <img
-            src="/logo.png"
-            onError={(e) => (e.currentTarget.src = "/logo192.png")}
-            alt=""
-            className="floaty absolute inset-0 m-auto h-32 w-32 opacity-30"
-          />
-        </div>
-
-        <div className="grid grid-cols-1 gap-10 md:grid-cols-5 md:items-center">
-          <div className="md:col-span-3">
-            <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
-              Let’s design your <span className="text-emerald-600">Security</span> +{" "}
-              <span className="text-emerald-600">Automation</span>
+      <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="grid gap-8 md:grid-cols-2">
+          {/* LEFT: fun/interactive explainer */}
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200">
+              Let’s plan something smart
+              <Sparkles className="h-4 w-4" />
+            </div>
+            <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900">
+              A security system that <span className="text-emerald-600">acts</span> — not just records
             </h1>
             <p className="mt-2 text-slate-600">
-              Get a quote, book a site survey, or ask anything. We’ll help you choose the right cameras, chimes, and
-              automations — and link it to your existing alarm/armed response.
+              Tell us what you want to secure. We’ll suggest a sensible kit and automation recipe
+              (AI detect → snapshot + chime → lights/sirens → track → escalate).
             </p>
 
-            {/* quick contact chips */}
-            <div className="mt-4 flex flex-wrap gap-2">
+            {/* Flip cards row */}
+            <div className="mt-6 grid gap-4 sm:grid-cols-2">
+              <FlipCard
+                front={
+                  <CardFace
+                    icon={<ScanEye className="h-5 w-5" />}
+                    title="Detect"
+                    text="AI tags person/pet/vehicle."
+                    tone="emerald"
+                  />
+                }
+                back={
+                  <CardFaceBack
+                    bullets={[
+                      "Fewer false alerts via zones & line crossing",
+                      "Snapshot included in the notification",
+                    ]}
+                  />
+                }
+              />
+              <FlipCard
+                front={
+                  <CardFace
+                    icon={<BellRing className="h-5 w-5" />}
+                    title="Alert"
+                    text="Snapshot + indoor chime."
+                    tone="amber"
+                  />
+                }
+                back={
+                  <CardFaceBack
+                    bullets={[
+                      "Night chime so you actually wake up",
+                      "Quiet day mode: relevant pings only",
+                    ]}
+                  />
+                }
+              />
+              <FlipCard
+                front={
+                  <CardFace
+                    icon={<Megaphone className="h-5 w-5" />}
+                    title="Deter"
+                    text="Lights & siren auto-fire."
+                    tone="rose"
+                  />
+                }
+                back={
+                  <CardFaceBack
+                    bullets={[
+                      "Spotlight flash on line crossing",
+                      "Siren burst on loitering",
+                    ]}
+                  />
+                }
+              />
+              <FlipCard
+                front={
+                  <CardFace
+                    icon={<RouteIcon className="h-5 w-5" />}
+                    title="Track"
+                    text="Pan/tilt can follow."
+                    tone="indigo"
+                  />
+                }
+                back={
+                  <CardFaceBack
+                    bullets={[
+                      "Auto-track moving targets",
+                      "Good hand-off between street cameras",
+                    ]}
+                  />
+                }
+              />
+            </div>
+
+            {/* Toggles */}
+            <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <ToggleGroup
+                  label="What are we securing?"
+                  options={[
+                    { key: "home", label: "Home", icon: <Home className="h-4 w-4" /> },
+                    { key: "street", label: "Street", icon: <Car className="h-4 w-4" /> },
+                  ]}
+                  value={projectType}
+                  onChange={setProjectType}
+                />
+                <ToggleGroup
+                  label="Power preference"
+                  options={[
+                    { key: "wired", label: "Wired" },
+                    { key: "wirefree", label: "Wire-free" },
+                  ]}
+                  value={power}
+                  onChange={setPower}
+                />
+                <ToggleGroup
+                  label="Mode you care about most"
+                  options={[
+                    { key: "day", label: "Day", icon: <Sun className="h-4 w-4" /> },
+                    { key: "night", label: "Night", icon: <Moon className="h-4 w-4" /> },
+                  ]}
+                  value={mode}
+                  onChange={setMode}
+                />
+                <ToggleGroup
+                  label="Contact preference"
+                  options={[
+                    { key: "whatsapp", label: "WhatsApp" },
+                    { key: "email", label: "Email" },
+                  ]}
+                  value={contactPref}
+                  onChange={setContactPref}
+                />
+              </div>
+              <p className="mt-2 text-xs text-slate-600">
+                These choices help us tailor the first proposal. We’ll confirm details on a quick call.
+              </p>
+            </div>
+
+            {/* Quick contacts strip */}
+            <div className="mt-6 grid gap-3 sm:grid-cols-2">
               <a
-                href={`mailto:${emailTo}`}
-                className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white px-3 py-1.5 text-sm text-emerald-700 hover:bg-emerald-50"
-              >
-                <Mail className="h-4 w-4" />
-                {emailTo}
-              </a>
-              <a
-                href={`tel:+${waNumber}`}
-                className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
-              >
-                <Phone className="h-4 w-4" />
-                079 495 0855
-              </a>
-              <a
-                href={`https://wa.me/${waNumber}`}
+                href="https://wa.me/27794950855"
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white px-3 py-1.5 text-sm text-emerald-700 hover:bg-emerald-50"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-white shadow-sm hover:bg-emerald-700"
               >
-                <MessageCircle className="h-4 w-4" />
-                WhatsApp us
+                <PhoneCall className="h-5 w-5" />
+                WhatsApp: +27 79 495 0855
+              </a>
+              <a
+                href="mailto:ian@ghosthome.co.za"
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-slate-700 hover:bg-slate-50"
+              >
+                <Mail className="h-5 w-5" />
+                ian@ghosthome.co.za
               </a>
             </div>
           </div>
 
-          {/* stacked info card */}
-          <div className="md:col-span-2">
-            <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-5">
-              <InfoLine icon={<Clock className="h-5 w-5" />} title="Hours" text="Mon–Fri 08:00–17:00" />
-              <InfoLine icon={<MapPin className="h-5 w-5" />} title="Based" text="Pretoria • On-site installs in SA" />
-              <InfoLine
-                icon={<Shield className="h-5 w-5" />}
-                title="POPIA"
-                text="Privacy-aware camera angles & signage available"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* FORM + CONTACT PANELS */}
-      <div className="mt-10 grid grid-cols-1 gap-8 md:grid-cols-5">
-        {/* form */}
-        <div className="md:col-span-3">
-          <form
-            onSubmit={handleSubmit}
-            className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm md:p-8"
-            noValidate
-          >
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <Field
-                label="Full name"
-                name="name"
-                value={fields.name}
-                onChange={onChange}
-                placeholder="Your name"
-                required
-              />
-              <Field
-                label="Email"
-                type="email"
-                name="email"
-                value={fields.email}
-                onChange={onChange}
-                placeholder="you@example.com"
-                required
-              />
-              <Field
-                label="Phone (optional)"
-                name="phone"
-                value={fields.phone}
-                onChange={onChange}
-                placeholder="079 123 4567"
-              />
-              <Field
-                label="Suburb/Area (helps plan Wi-Fi & install)"
-                name="suburb"
-                value={fields.suburb}
-                onChange={onChange}
-                placeholder="e.g. Lynnwood, Montana, etc."
-              />
-              <div className="sm:col-span-2">
-                <label className="mb-1 block text-sm font-medium text-slate-800">Reason</label>
-                <select
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none ring-emerald-500 focus:ring"
-                  name="reason"
-                  value={fields.reason}
-                  onChange={onChange}
-                >
-                  <option>Quote</option>
-                  <option>Site Survey</option>
-                  <option>Support</option>
-                  <option>General Question</option>
-                </select>
+          {/* RIGHT: the form */}
+          <div className="rounded-2xl border border-slate-200 bg-white p-4">
+            <form onSubmit={handleSubmit} className="space-y-3">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label htmlFor="name" className="block text-sm font-medium text-slate-700">
+                    Full name *
+                  </label>
+                  <input
+                    id="name"
+                    name="name"
+                    required
+                    type="text"
+                    value={form.name}
+                    onChange={onChange}
+                    placeholder="e.g., Ian Jansen van Rensburg"
+                    className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="phone" className="block text-sm font-medium text-slate-700">
+                    Phone (WhatsApp) *
+                  </label>
+                  <input
+                    id="phone"
+                    name="phone"
+                    required
+                    type="tel"
+                    value={form.phone}
+                    onChange={onChange}
+                    placeholder="+27 79 495 0855"
+                    className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  />
+                </div>
               </div>
 
-              <div className="sm:col-span-2">
-                <label className="mb-1 block text-sm font-medium text-slate-800">Message</label>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label htmlFor="email" className="block text-sm font-medium text-slate-700">
+                    Email
+                  </label>
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    value={form.email}
+                    onChange={onChange}
+                    placeholder="you@example.com"
+                    className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="suburb" className="block text-sm font-medium text-slate-700">
+                    Suburb / Area
+                  </label>
+                  <input
+                    id="suburb"
+                    name="suburb"
+                    type="text"
+                    value={form.suburb}
+                    onChange={onChange}
+                    placeholder="e.g., Pretoria East"
+                    className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="message" className="block text-sm font-medium text-slate-700">
+                  What do you want to secure? *
+                </label>
                 <textarea
-                  className="min-h-[140px] w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none ring-emerald-500 focus:ring"
+                  id="message"
                   name="message"
-                  value={fields.message}
-                  onChange={onChange}
-                  placeholder="Tell us what you want to achieve — number of cameras, chime at night, siren, alarm link, etc."
                   required
+                  rows={4}
+                  value={form.message}
+                  onChange={onChange}
+                  placeholder="Tell us about your home/street, wired vs wire-free, and any automations (lights, siren, chime)…"
+                  className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
                 />
               </div>
 
-              {/* honeypot */}
-              <input
-                type="text"
-                name="company"
-                value={fields.botTrap}
-                onChange={(e) => setFields((s) => ({ ...s, botTrap: e.target.value }))}
-                className="hidden"
-                tabIndex={-1}
-                autoComplete="off"
-              />
-            </div>
-
-            {/* alerts */}
-            {error ? (
-              <div className="mt-4 flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
-                <AlertCircle className="h-4 w-4" />
-                <span>{error}</span>
+              {/* Live subject preview */}
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <p className="text-xs font-semibold text-slate-700">Email subject preview</p>
+                <p className="mt-1 truncate text-xs text-slate-600">{subject}</p>
               </div>
-            ) : null}
-            {ok ? (
-              <div className="mt-4 flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
-                <CheckCircle2 className="h-4 w-4" />
-                <span>{ok}</span>
+
+              {/* POPIA note */}
+              <p className="text-xs text-slate-500">
+                We respect POPIA. We’ll only use your details to respond to your enquiry. Privacy signage available on request.
+              </p>
+
+              <div className="pt-2">
+                <button
+                  type="submit"
+                  disabled={sending}
+                  className={[
+                    "inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold shadow-sm",
+                    sending
+                      ? "bg-emerald-400 text-white"
+                      : "bg-emerald-600 text-white hover:bg-emerald-700",
+                  ].join(" ")}
+                  aria-busy={sending ? "true" : "false"}
+                >
+                  {sending ? "Opening email…" : "Send enquiry"}
+                </button>
               </div>
-            ) : null}
-
-            {/* actions */}
-            <div className="mt-6 flex flex-wrap items-center gap-3">
-              <button
-                type="submit"
-                className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-5 py-2.5 text-white shadow hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              >
-                <Mail className="h-4 w-4" />
-                Send email
-              </button>
-              <a
-                href={asWhatsAppLink()}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-2 rounded-lg border border-emerald-300 bg-white px-5 py-2.5 text-emerald-700 hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              >
-                <MessageCircle className="h-4 w-4" />
-                WhatsApp now
-              </a>
-              <Link
-                to="/packages"
-                className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-5 py-2.5 text-slate-700 hover:bg-slate-50"
-              >
-                See packages <ChevronRight className="h-4 w-4" />
-              </Link>
-            </div>
-
-            <p className="mt-4 text-xs text-slate-500">
-              By contacting us you consent to being contacted about your enquiry. We follow POPIA best-practice and can
-              provide signage on request.
-            </p>
-          </form>
-        </div>
-
-        {/* contact panels */}
-        <div className="md:col-span-2 space-y-6">
-          {/* direct contact */}
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h3 className="mb-3 text-base font-bold text-slate-900">Direct contact</h3>
-            <div className="space-y-2 text-sm">
-              <Line icon={<Mail className="h-4 w-4" />} label="Email" value={emailTo} href={`mailto:${emailTo}`} />
-              <Line icon={<Phone className="h-4 w-4" />} label="Phone" value="079 495 0855" href={`tel:+${waNumber}`} />
-              <Line
-                icon={<MessageCircle className="h-4 w-4" />}
-                label="WhatsApp"
-                value="+27 79 495 0855"
-                href={`https://wa.me/${waNumber}`}
-              />
-            </div>
-          </div>
-
-          {/* what to expect */}
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6">
-            <h3 className="mb-3 text-base font-bold text-slate-900">What to expect</h3>
-            <ul className="space-y-2 text-sm text-slate-700">
-              <li className="flex gap-2">
-                <CheckCircle2 className="mt-0.5 h-4 w-4 text-emerald-600" />
-                Quick response with options & pricing ranges.
-              </li>
-              <li className="flex gap-2">
-                <CheckCircle2 className="mt-0.5 h-4 w-4 text-emerald-600" />
-                Optional site survey to map Wi-Fi and blind spots.
-              </li>
-              <li className="flex gap-2">
-                <CheckCircle2 className="mt-0.5 h-4 w-4 text-emerald-600" />
-                Clean install, training, and aftercare tweaks.
-              </li>
-            </ul>
-          </div>
-
-          {/* tiny brand stamp */}
-          <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4">
-            <img
-              src="/logo.png"
-              onError={(e) => (e.currentTarget.src = "/logo192.png")}
-              alt="Ghosthome"
-              className="h-10 w-10 rounded-full ring-1 ring-slate-200"
-            />
-            <div>
-              <p className="text-sm font-semibold text-slate-900">Ghosthome</p>
-              <p className="text-xs text-slate-500">Security & Automation for SA homes</p>
-            </div>
+            </form>
           </div>
         </div>
-      </div>
-    </div>
+      </section>
+
+      {/* Bottom mini features row (keeps page lively) */}
+      <section className="mt-10">
+        <div className="grid gap-3 sm:grid-cols-3">
+          <MiniCard
+            icon={<Lightbulb className="h-5 w-5" />}
+            title="Automate"
+            text="Lights, plugs & switches react instantly."
+            tint="sky"
+          />
+          <MiniCard
+            icon={<Shield className="h-5 w-5" />}
+            title="Responsible"
+            text="POPIA-aware setup, privacy zones, signage."
+            tint="violet"
+          />
+          <MiniCard
+            icon={<ScanEye className="h-5 w-5" />}
+            title="Clarity"
+            text="Snapshot in the notification = instant context."
+            tint="emerald"
+          />
+        </div>
+      </section>
+    </main>
   );
 }
 
-/* ——— Reusable bits ——— */
+/* ---------- Small UI helpers (local) ---------- */
 
-function Field({ label, name, value, onChange, placeholder, type = "text", required = false }) {
+function ToggleGroup({ label, options, value, onChange }) {
   return (
     <div>
-      <label className="mb-1 block text-sm font-medium text-slate-800">
-        {label} {required ? <span className="text-red-600">*</span> : null}
-      </label>
-      <input
-        type={type}
-        name={name}
-        value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-        required={required}
-        className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none ring-emerald-500 focus:ring"
-      />
+      <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-600">
+        {label}
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {options.map((opt) => {
+          const active = opt.key === value;
+          return (
+            <button
+              key={opt.key}
+              type="button"
+              onClick={() => onChange(opt.key)}
+              className={[
+                "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold ring-1",
+                active
+                  ? "bg-emerald-600 text-white ring-emerald-600"
+                  : "bg-white text-emerald-700 ring-emerald-200 hover:bg-emerald-50",
+              ].join(" ")}
+              aria-pressed={active ? "true" : "false"}
+            >
+              {opt.icon}
+              {opt.label}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
 
-function Line({ icon, label, value, href }) {
-  const C = href ? "a" : "div";
+function FlipCard({ front, back }) {
   return (
-    <C
-      {...(href ? { href, target: href.startsWith("http") ? "_blank" : undefined, rel: "noreferrer" } : {})}
-      className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2 hover:bg-slate-50"
-    >
-      <span className="flex items-center gap-2 text-slate-600">
-        <span className="text-emerald-700">{icon}</span>
-        <span className="text-slate-800">{label}</span>
-      </span>
-      <span className="text-slate-700">{value}</span>
-    </C>
+    <div className="group relative h-36 w-full cursor-pointer rounded-2xl bg-transparent [perspective:1000px]">
+      <div className="relative h-full w-full transition-transform duration-500 [transform-style:preserve-3d] group-hover:[transform:rotateY(180deg)]">
+        <div
+          className="absolute inset-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm [backface-visibility:hidden]"
+          style={{ backfaceVisibility: "hidden" }}
+        >
+          {front}
+        </div>
+        <div
+          className="absolute inset-0 rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm [transform:rotateY(180deg)] [backface-visibility:hidden]"
+          style={{ transform: "rotateY(180deg)", backfaceVisibility: "hidden" }}
+        >
+          {back}
+        </div>
+      </div>
+    </div>
   );
 }
 
-function InfoLine({ icon, title, text }) {
+function CardFace({ icon, title, text, tone = "emerald" }) {
+  const tint = {
+    emerald: "text-emerald-600",
+    amber: "text-amber-600",
+    rose: "text-rose-600",
+    indigo: "text-indigo-600",
+    sky: "text-sky-600",
+    violet: "text-violet-600",
+  }[tone];
+
   return (
-    <div className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white p-3">
-      <span className="mt-0.5 text-emerald-700">{icon}</span>
-      <div>
-        <p className="text-sm font-semibold text-slate-900">{title}</p>
-        <p className="text-xs text-slate-600">{text}</p>
+    <div className="flex h-full flex-col justify-between">
+      <div className="flex items-center gap-2">
+        <span className={`grid h-8 w-8 place-items-center rounded-full bg-slate-100 ${tint}`}>
+          {icon}
+        </span>
+        <h4 className="text-base font-semibold text-slate-900">{title}</h4>
       </div>
+      <p className="text-sm text-slate-700">{text}</p>
+    </div>
+  );
+}
+
+function CardFaceBack({ bullets = [] }) {
+  return (
+    <ul className="flex h-full list-disc flex-col justify-center gap-2 pl-5 text-sm text-slate-700">
+      {bullets.map((b) => (
+        <li key={b}>{b}</li>
+      ))}
+    </ul>
+  );
+}
+
+function MiniCard({ icon, title, text, tint = "emerald" }) {
+  const tones = {
+    emerald: "bg-emerald-50 text-emerald-800 ring-emerald-200",
+    sky: "bg-sky-50 text-sky-800 ring-sky-200",
+    violet: "bg-violet-50 text-violet-800 ring-violet-200",
+  };
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-4 transition-transform hover:-translate-y-0.5 hover:shadow-sm">
+      <div
+        className={`mb-2 inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${tones[tint]}`}
+      >
+        <span className="grid h-5 w-5 place-items-center rounded-full bg-white">{icon}</span>
+        {title}
+      </div>
+      <p className="text-sm text-slate-700">{text}</p>
     </div>
   );
 }

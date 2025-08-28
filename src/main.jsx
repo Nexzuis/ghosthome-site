@@ -1,38 +1,38 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import RootLayout from "./routes/RootLayout.jsx";
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
 
-// Make sure these point to different files:
+import RootLayout from "./routes/RootLayout.jsx";
 import Home from "./routes/Home.jsx";
 import Features from "./routes/Features.jsx";
+import About from "./routes/About.jsx";
 import Packages from "./routes/Packages.jsx";
-import About from "./routes/About.jsx";   // ← not Features.jsx by accident
+import SecureStreet from "./routes/SecureStreet.jsx";
 import Contact from "./routes/Contact.jsx";
+import AppError from "./routes/AppError.jsx";
+import NotFound from "./routes/NotFound.jsx";
+
 import "./index.css";
 
-function NotFound() {
-  return (
-    <div className="mx-auto max-w-3xl p-8">
-      <h1 className="mb-2 text-2xl font-bold text-slate-900">Page not found</h1>
-      <p className="text-slate-600">Use the navigation above to continue.</p>
-    </div>
-  );
-}
+const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <RootLayout />,
+    errorElement: <AppError />, // Friendly error UI instead of raw stack
+    children: [
+      { index: true, element: <Home /> },
+      { path: "features", element: <Features /> },
+      { path: "about", element: <About /> },
+      { path: "packages", element: <Packages /> },
+      { path: "street", element: <SecureStreet /> }, // New page
+      { path: "contact", element: <Contact /> },     // Contact restored
+      { path: "*", element: <NotFound /> },          // 404 within app
+    ],
+  },
+]);
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <BrowserRouter>
-      <Routes>
-        <Route element={<RootLayout />}>
-          <Route index element={<Home />} />
-          <Route path="/features" element={<Features />} /> {/* ← Features component */}
-          <Route path="/packages" element={<Packages />} />
-          <Route path="/about" element={<About />} />       {/* ← About component */}
-          <Route path="/contact" element={<Contact />} />
-          <Route path="*" element={<NotFound />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
+    <RouterProvider router={router} />
   </React.StrictMode>
 );
