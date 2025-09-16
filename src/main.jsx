@@ -15,6 +15,10 @@ import Admin from "./routes/Admin.jsx";
 import Upload from "./routes/Upload.jsx";
 import Terms from "./routes/Terms.jsx";
 
+// ✅ Add the missing pages so the routes resolve in Production
+import Signup from "./routes/Signup.jsx";
+import Pay from "./routes/pay.jsx";
+
 const router = createBrowserRouter([
   {
     path: "/",
@@ -30,6 +34,10 @@ const router = createBrowserRouter([
       { path: "terms", element: <Terms /> },
       { path: "admin", element: <Admin /> },
       { path: "upload/:token", element: <Upload /> },
+
+      // ✅ New: routes that were 404ing
+      { path: "signup", element: <Signup /> },
+      { path: "pay", element: <Pay /> },
     ],
   },
 ]);
