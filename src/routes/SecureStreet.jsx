@@ -1,75 +1,31 @@
-import React, { useMemo, useState } from "react";
+import React from "react";
 import { Link } from "react-router-dom";
 import {
-  Camera,
+  PhoneCall,
+  Mail,
   Shield,
+  Camera,
   BellRing,
   ScanEye,
-  Lightbulb,
-  Megaphone,
   Map,
-  Route as RouteIcon,
-  PhoneCall,
-  Sun,
-  Moon,
-  Car,
   PlayCircle,
-  Zap,
+  Clock,
+  Users,
+  CheckCircle2,
+  Lock,
 } from "lucide-react";
 import { motion } from "framer-motion";
 
 /**
- * "Secure Your Street" — interactive page for community street cameras + automations.
- * Visual language: whites/greys/slates + emerald accents (matches site).
- * No new libraries added. Uses framer-motion + Tailwind only.
+ * Secure Street — Charlie Zone (Moreletapark)
+ * Landing page to convince residents to join Community Watch access.
+ * - Plans: R99 (2 cameras, 1 account) / R149 (4 cameras, 2 accounts)
+ * - Annual prepay options: R1,099 and R1,299
+ * - Benefits-focused; minimal tech specifics
+ * - Smart notifications 21:00–05:00 (customisable)
+ * - Same visual language; no new libraries
  */
 export default function SecureStreet() {
-  const [layout, setLayout] = useState("intersection");
-  const [power, setPower] = useState("wired");
-  const [mode, setMode] = useState("night");
-
-  const recommendations = useMemo(() => {
-    const rec = {
-      intersection: {
-        wired: [
-          "2 × fixed bullet for each approach road (total 4)",
-          "1 × pan/tilt at the centre to track movement",
-          "Siren/spotlight at centre pole",
-        ],
-        wirefree: [
-          "4 × wire-free bullets on opposite corners",
-          "1 × pan/tilt on the busiest corner",
-          "Solar panels where possible",
-        ],
-      },
-      culdesac: {
-        wired: [
-          "1 × fixed bullet at the entrance looking in",
-          "1 × pan/tilt at the end of the circle",
-          "Spotlight + indoor chime at two nearest homes",
-        ],
-        wirefree: [
-          "2 × wire-free bullets at the entrance",
-          "1 × pan/tilt mid-street to follow targets",
-          "Solar panels on south-facing poles",
-        ],
-      },
-      straight: {
-        wired: [
-          "2 × fixed bullets in opposing directions on one pole",
-          "1 × pan/tilt mid-street to track",
-          "Smart lights along fences triggered by detections",
-        ],
-        wirefree: [
-          "3 × wire-free bullets spaced ~80–100 m",
-          "Optional pan/tilt at the hotspot corner",
-          "Solar panels to avoid trenching",
-        ],
-      },
-    };
-    return rec[layout][power];
-  }, [layout, power]);
-
   return (
     <main className="mx-auto max-w-7xl px-4 py-10">
       {/* HERO */}
@@ -82,24 +38,25 @@ export default function SecureStreet() {
           <div>
             <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200">
               <Shield className="h-4 w-4" />
-              Secure your street
+              Charlie Zone • Moreletapark
             </div>
+
             <h1 className="text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">
-              Community-first cameras and{" "}
-              <span className="text-emerald-600">smart automations</span>
+              Join the <span className="text-emerald-600">Community Watch</span> — see your street, stay informed
             </h1>
-            <p className="mt-3 text-slate-600">
-              Alarm and armed response companies often charge{" "}
-              <strong>thousands</strong> for what a community can run together.{" "}
-              <strong>Community-driven, affordable security</strong> for your street.{" "}
-              <span className="font-semibold text-emerald-700">
-                Get us involved in your community now!
-              </span>{" "}
-              Traditional alarms shout “zone.” Ghosthome <strong>acts</strong>: AI
-              detects a person/vehicle, sends a <strong>snapshot</strong>, rings an{" "}
-              <strong>indoor chime</strong>, fires <strong>lights/sirens</strong>, and
-              can escalate to armed response.
+
+            <p className="mt-3 text-slate-700">
+              Subscribe to **street-camera access** for the roads leading to your home. Get
+              night-time person-detection alerts and live view of the cameras closest to you —
+              simple, compliant, and community-run.
             </p>
+
+            <ul className="mt-4 grid gap-2 text-sm text-slate-700">
+              <Benefit icon={<ScanEye className="h-4 w-4" />} text="Smart notifications for your selected cameras (21:00–05:00 by default — customisable on request)." />
+              <Benefit icon={<BellRing className="h-4 w-4" />} text="See what triggered the alert with a snapshot + live view, so you can act fast." />
+              <Benefit icon={<Lock className="h-4 w-4" />} text="POPIA-aware: privacy masks on private areas; resident access is limited and logged." />
+              <Benefit icon={<Users className="h-4 w-4" />} text="Be part of a local watch — support the project and your neighbours." />
+            </ul>
 
             <div className="mt-5 flex flex-wrap gap-3">
               <a
@@ -109,60 +66,26 @@ export default function SecureStreet() {
                 className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-white shadow-sm hover:bg-emerald-700"
               >
                 <PhoneCall className="h-5 w-5" />
-                WhatsApp us
+                WhatsApp to join
               </a>
-              {/* Deep-link directly to the Street section on Packages */}
+              <a
+                href="mailto:ian@ghosthome.co.za"
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-slate-700 hover:bg-slate-50"
+              >
+                <Mail className="h-5 w-5" />
+                Email us
+              </a>
               <Link
-                to="/packages#street"
+                to="/packages#charlie-zone"
                 className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-slate-700 hover:bg-slate-50"
               >
                 <Camera className="h-5 w-5" />
-                See package ideas
+                View plan breakdown
               </Link>
-            </div>
-
-            {/* Quick explainer chips */}
-            <div className="mt-6 grid gap-2 sm:grid-cols-2">
-              <ExplainerChip
-                icon={<ScanEye className="h-4 w-4" />}
-                label="Detect"
-                tone="emerald"
-                text="AI person/vehicle classification reduces false alerts."
-              />
-              <ExplainerChip
-                icon={<BellRing className="h-4 w-4" />}
-                label="Alert"
-                tone="amber"
-                text="Snapshot in the notification + indoor chime at night."
-              />
-              <ExplainerChip
-                icon={<Megaphone className="h-4 w-4" />}
-                label="Deter"
-                tone="rose"
-                text="Auto-trigger spotlights & sirens to stop would-be intruders."
-              />
-              <ExplainerChip
-                icon={<RouteIcon className="h-4 w-4" />}
-                label="Track"
-                tone="indigo"
-                text="Pan/tilt models follow motion along the street."
-              />
-              <ExplainerChip
-                icon={<Lightbulb className="h-4 w-4" />}
-                label="Automate"
-                tone="sky"
-                text="Lights, plugs, and switches respond instantly."
-              />
-              <ExplainerChip
-                icon={<Shield className="h-4 w-4" />}
-                label="Escalate"
-                tone="violet"
-                text="Link to alarm panel/armed response when needed."
-              />
             </div>
           </div>
 
-          {/* Right: demo video + static image slot */}
+          {/* Right: demo video + static image slot (unchanged paths) */}
           <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
             {/* 16:9 video */}
             <div className="aspect-video w-full overflow-hidden rounded-xl ring-1 ring-slate-200">
@@ -184,274 +107,115 @@ export default function SecureStreet() {
             <div className="mt-4">
               <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-600">
                 <Map className="h-4 w-4" />
-                Street coverage overview
+                Example street coverage (illustrative)
               </div>
               <div className="aspect-video w-full overflow-hidden rounded-xl bg-white ring-1 ring-slate-200">
-                {/* Place your image at: public/images/secure-street-overview.jpg (or .png) */}
                 <img
                   src="/images/secure-street-overview.jpg"
-                  alt="Street coverage diagram showing intersection, cul-de-sac, and straight-road camera placement"
+                  alt="Illustrative diagram of street-pole camera coverage near home approaches"
                   className="h-full w-full object-cover"
                   loading="lazy"
                 />
               </div>
               <p className="mt-2 text-xs text-slate-600">
-                Tip: Use a high-contrast diagram with labels (cameras, siren, spotlight). 16:9 works best.
+                We focus views on public streets/sidewalks; privacy masks applied to private areas.
               </p>
             </div>
           </div>
         </motion.div>
       </section>
 
-      {/* LAYOUT PICKER */}
-      <section className="mt-10 grid gap-6 md:grid-cols-3">
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-900">
-            Pick your street layout
-          </h2>
-          <p className="mt-1 text-sm text-slate-600">
-            We’ll suggest a sensible camera mix for quick planning.
-          </p>
+      {/* PLANS — quick choose (also duplicated in /packages#charlie-zone) */}
+      <section className="mt-10">
+        <h2 className="text-xl font-semibold text-slate-900">Choose your access</h2>
+        <p className="mt-1 text-sm text-slate-600">
+          Access is scoped to cameras nearest your home (approach roads / entrances & exits). Times can be customised if needed.
+        </p>
 
-          <div className="mt-4 grid grid-cols-3 gap-2">
-            <OptionChip
-              label="Intersection"
-              active={layout === "intersection"}
-              onClick={() => setLayout("intersection")}
-            />
-            <OptionChip
-              label="Cul-de-sac"
-              active={layout === "culdesac"}
-              onClick={() => setLayout("culdesac")}
-            />
-            <OptionChip
-              label="Straight road"
-              active={layout === "straight"}
-              onClick={() => setLayout("straight")}
-            />
-          </div>
-
-          <div className="mt-4 grid grid-cols-2 gap-2">
-            <OptionChip
-              label="Wired"
-              active={power === "wired"}
-              onClick={() => setPower("wired")}
-            />
-            <OptionChip
-              label="Wire-free"
-              active={power === "wirefree"}
-              onClick={() => setPower("wirefree")}
-            />
-          </div>
-
-          <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-4">
-            <div className="mb-1 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-              <Map className="h-4 w-4" />
-              Suggested kit
-            </div>
-            <ul className="list-disc space-y-1 pl-5 text-sm text-slate-700">
-              {recommendations.map((r) => (
-                <li key={r}>{r}</li>
-              ))}
-            </ul>
-            <p className="mt-3 text-xs text-slate-600">
-              Includes smart zones/line-crossing for fewer false alerts.
-            </p>
-          </div>
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
+          <PlanCard
+            name="Neighbour Access — 2 Cameras"
+            monthly="R99 / month"
+            annual="R1,099 / 12 months"
+            saveNote="Save R89/year vs monthly"
+            bullets={[
+              "Live view to 2 nearby street cameras",
+              "1 account (single user)",
+              "Smart notifications 21:00–05:00 (customisable)",
+              "Resident access is limited and logged",
+            ]}
+          />
+          <PlanCard
+            name="Route Access — 4 Cameras"
+            monthly="R149 / month"
+            annual="R1,299 / 12 months"
+            saveNote="Save R489/year vs monthly"
+            highlight
+            bullets={[
+              "Live view to 4 cameras on your routes",
+              "2 accounts (e.g., you + partner)",
+              "Smart notifications 21:00–05:00 (customisable)",
+              "Resident access is limited and logged",
+            ]}
+          />
         </div>
 
-        {/* FLIP CARDS — STREET USE-CASES */}
-        <div className="md:col-span-2">
-          <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-            <Car className="h-4 w-4" />
-            Street use-cases
-          </div>
+        <div className="mt-4 text-xs text-slate-600">
+          Online payment is coming soon. For now, WhatsApp or email and we’ll activate your access under the community rules.
+        </div>
+      </section>
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <FlipCard
-              front={
-                <CardFace
-                  icon={<ScanEye className="h-5 w-5" />}
-                  title="Detect"
-                  tone="emerald"
-                  text="AI knows people vs. vehicles."
-                />
-              }
-              back={
-                <CardFaceBack
-                  bullets={[
-                    "Person snapshot sent to your phone",
-                    "Trigger indoor chimes after hours",
-                    "Privacy zones to avoid neighbours’ yards",
-                  ]}
-                />
-              }
-            />
-            <FlipCard
-              front={
-                <CardFace
-                  icon={<BellRing className="h-5 w-5" />}
-                  title="Alert"
-                  tone="amber"
-                  text="Snapshot + chime = you actually wake up."
-                />
-              }
-              back={
-                <CardFaceBack
-                  bullets={[
-                    "Night mode chimes for households on duty",
-                    "Day mode: quiet, only relevant pings",
-                    "Share to a WhatsApp monitor group",
-                  ]}
-                />
-              }
-            />
-            <FlipCard
-              front={
-                <CardFace
-                  icon={<Megaphone className="h-5 w-5" />}
-                  title="Deter"
-                  tone="rose"
-                  text="Lights/sirens fire automatically."
-                />
-              }
-              back={
-                <CardFaceBack
-                  bullets={[
-                    "Spotlight flash when line is crossed",
-                    "Siren burst on human loitering",
-                    "Audio warning clips (optional)",
-                  ]}
-                />
-              }
-            />
-            <FlipCard
-              front={
-                <CardFace
-                  icon={<RouteIcon className="h-5 w-5" />}
-                  title="Track"
-                  tone="indigo"
-                  text="Follow motion across the view."
-                />
-              }
-              back={
-                <CardFaceBack
-                  bullets={[
-                    "Pan/tilt cameras auto-track targets",
-                    "Multi-camera hand-off down the road",
-                    "Bookmarks for hot-spots",
-                  ]}
-                />
-              }
-            />
-            <FlipCard
-              front={
-                <CardFace
-                  icon={<Lightbulb className="h-5 w-5" />}
-                  title="Automate"
-                  tone="sky"
-                  text="Lights, plugs, and switches."
-                />
-              }
-              back={
-                <CardFaceBack
-                  bullets={[
-                    "Turn on perimeter lights after 22:00 on person",
-                    "Gate relay pulse when trusted car is detected",
-                    "Street siren test every Sunday 12:00",
-                  ]}
-                />
-              }
-            />
-            <FlipCard
-              front={
-                <CardFace
-                  icon={<Shield className="h-5 w-5" />}
-                  title="Escalate"
-                  tone="violet"
-                  text="Link to armed response."
-                />
-              }
-              back={
-                <CardFaceBack
-                  bullets={[
-                    "Dry-contact into alarm/armed response radio",
-                    "Only escalates on verified human",
-                    "Audit trail kept in cloud clips",
-                  ]}
-                />
-              }
-            />
-          </div>
+      {/* HOW IT HELPS — short, plain sequence */}
+      <section className="mt-10 grid gap-6 md:grid-cols-3">
+        <InfoCard
+          icon={<ScanEye className="h-5 w-5" />}
+          title="See what matters"
+          text="When a person is detected on your selected cameras at night, you get a clear notification so you can check quickly."
+        />
+        <InfoCard
+          icon={<Clock className="h-5 w-5" />}
+          title="Quiet by day"
+          text="Daytime can be quieter by default. Need different hours? We can adjust the window to suit your household."
+        />
+        <InfoCard
+          icon={<CheckCircle2 className="h-5 w-5" />}
+          title="Simple & responsible"
+          text="Resident access is scoped and logged. No public sharing. POPIA-aware setup with privacy masks and signage available."
+        />
+      </section>
 
-          {/* MODE TOGGLE */}
-          <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-sm font-semibold text-slate-800">
-                <Zap className="h-4 w-4 text-emerald-600" />
-                Always-on modes
-              </div>
-              <div className="flex items-center gap-2">
-                <ModeChip
-                  icon={<Sun className="h-4 w-4" />}
-                  label="Day"
-                  active={mode === "day"}
-                  onClick={() => setMode("day")}
-                />
-                <ModeChip
-                  icon={<Moon className="h-4 w-4" />}
-                  label="Night"
-                  active={mode === "night"}
-                  onClick={() => setMode("night")}
-                />
-              </div>
-            </div>
-            <p className="mt-2 text-sm text-slate-600">
-              {mode === "day"
-                ? "Day: lower sensitivity, no chimes, snapshot only for people/vehicles crossing a line."
-                : "Night: higher sensitivity, indoor chime enabled, lights/siren can trigger on verified person."}
+      {/* CTA STRIP */}
+      <section className="mt-10 rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
+        <div className="flex flex-col items-start justify-between gap-3 md:flex-row md:items-center">
+          <div>
+            <h3 className="text-base font-semibold text-slate-900">Ready to support your street?</h3>
+            <p className="mt-1 text-sm text-slate-700">
+              Join the Charlie Zone watch. We’ll confirm your nearest cameras and activate your access.
             </p>
           </div>
-
-          {/* COMPLIANCE + CTA */}
-          <div className="mt-6 grid gap-4 lg:grid-cols-2">
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <h3 className="text-base font-semibold text-slate-900">
-                Responsible, compliant installs
-              </h3>
-              <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700">
-                <li>POPIA-aware setup with privacy zones and signage available.</li>
-                <li>Wi-Fi dependent — we can add mesh/extenders if coverage is weak.</li>
-                <li>Wired kits can include UPS options for power cuts.</li>
-                <li>Site survey may affect final equipment mix and installation time.</li>
-              </ul>
-            </div>
-            <div className="rounded-2xl border border-slate-200 bg-white p-4">
-              <h3 className="text-base font-semibold text-slate-900">
-                Ready to plan your street?
-              </h3>
-              <p className="mt-1 text-sm text-slate-600">
-                We’ll propose a layout, bill of materials, and automation recipes
-                based on your road shape and coverage goals.
-              </p>
-              <div className="mt-3 flex flex-wrap gap-3">
-                <a
-                  href="https://wa.me/27794950855"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-white shadow-sm hover:bg-emerald-700"
-                >
-                  <PhoneCall className="h-5 w-5" />
-                  WhatsApp us
-                </a>
-                <Link
-                  to="/features"
-                  className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-slate-700 hover:bg-slate-50"
-                >
-                  Learn more
-                </Link>
-              </div>
-            </div>
+          <div className="flex flex-wrap gap-3">
+            <a
+              href="https://wa.me/27794950855"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-white shadow-sm hover:bg-emerald-700"
+            >
+              <PhoneCall className="h-5 w-5" />
+              WhatsApp 079 495 0855
+            </a>
+            <a
+              href="mailto:ian@ghosthome.co.za"
+              className="inline-flex items-center gap-2 rounded-xl border border-emerald-300 bg-white px-4 py-2 text-emerald-700 hover:bg-emerald-50"
+            >
+              <Mail className="h-5 w-5" />
+              ian@ghosthome.co.za
+            </a>
+            <Link
+              to="/packages#charlie-zone"
+              className="inline-flex items-center gap-2 rounded-xl border border-emerald-300 bg-white px-4 py-2 text-emerald-700 hover:bg-emerald-50"
+            >
+              View plan details
+            </Link>
           </div>
         </div>
       </section>
@@ -459,115 +223,79 @@ export default function SecureStreet() {
   );
 }
 
-/* ---- UI bits ---- */
-function OptionChip({ label, active, onClick }) {
+/* ---------- Small UI helpers ---------- */
+
+function Benefit({ icon, text }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={[
-        "whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-semibold ring-1",
-        active
-          ? "bg-emerald-600 text-white ring-emerald-600"
-          : "bg-white text-emerald-700 ring-emerald-200 hover:bg-emerald-50",
-      ].join(" ")}
-    >
-      {label}
-    </button>
+    <li className="flex items-start gap-2">
+      <span className="mt-0.5 grid h-6 w-6 place-items-center rounded-md bg-slate-100 text-slate-700 ring-1 ring-slate-200">
+        {icon}
+      </span>
+      <span>{text}</span>
+    </li>
   );
 }
 
-function ModeChip({ icon, label, active, onClick }) {
+function InfoCard({ icon, title, text }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={[
-        "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold ring-1",
-        active
-          ? "bg-emerald-600 text-white ring-emerald-600"
-          : "bg-white text-emerald-700 ring-emerald-200 hover:bg-emerald-50",
-      ].join(" ")}
-    >
-      {icon}
-      {label}
-    </button>
-  );
-}
-
-function ExplainerChip({ icon, label, text, tone = "emerald" }) {
-  const tones = {
-    emerald: "bg-emerald-50 text-emerald-800 ring-1 ring-inset ring-emerald-200",
-    amber: "bg-amber-50 text-amber-800 ring-1 ring-inset ring-amber-200",
-    rose: "bg-rose-50 text-rose-800 ring-1 ring-inset ring-rose-200",
-    indigo: "bg-indigo-50 text-indigo-800 ring-1 ring-inset ring-indigo-200",
-    sky: "bg-sky-50 text-sky-800 ring-1 ring-inset ring-sky-200",
-    violet: "bg-violet-50 text-violet-800 ring-1 ring-inset ring-violet-200",
-  };
-
-  return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4">
-      <div
-        className={`mb-2 inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-xs font-semibold ${tones[tone]}`}
-      >
-        <span className="grid h-4 w-4 place-items-center">{icon}</span>
-        {label}
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200">
+        {icon}
+        {title}
       </div>
       <p className="text-sm text-slate-700">{text}</p>
     </div>
   );
 }
 
-function FlipCard({ front, back }) {
+function PlanCard({ name, monthly, annual, saveNote, bullets = [], highlight = false }) {
   return (
-    <div className="group relative h-44 w-full cursor-pointer rounded-2xl bg-transparent [perspective:1000px]">
-      <div className="relative h-full w-full transition-transform duration-500 [transform-style:preserve-3d] group-hover:[transform:rotateY(180deg)]">
-        <div
-          className="absolute inset-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm [backface-visibility:hidden]"
-          style={{ backfaceVisibility: "hidden" }}
-        >
-          {front}
+    <div
+      className={[
+        "relative overflow-hidden rounded-2xl border p-5 shadow-sm",
+        highlight
+          ? "border-emerald-300 bg-slate-900 text-white"
+          : "border-slate-200 bg-slate-800 text-slate-50",
+      ].join(" ")}
+    >
+      {highlight && (
+        <div className="absolute right-3 top-3 rounded-full bg-emerald-500/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-200 ring-1 ring-emerald-400/40">
+          Popular
         </div>
-        <div
-          className="absolute inset-0 rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm [transform:rotateY(180deg)] [backface-visibility:hidden]"
-          style={{ transform: "rotateY(180deg)", backfaceVisibility: "hidden" }}
+      )}
+
+      <h3 className="text-lg font-semibold">{name}</h3>
+      <div className="mt-1 text-2xl font-bold">{monthly}</div>
+      <div className="mt-0.5 text-sm opacity-90">{annual}</div>
+      <div className="text-xs opacity-80">{saveNote}</div>
+
+      <ul className="mt-3 space-y-1 text-sm">
+        {bullets.map((b) => (
+          <li key={b} className="flex items-start gap-2">
+            <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400" />
+            <span>{b}</span>
+          </li>
+        ))}
+      </ul>
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        <a
+          href="https://wa.me/27794950855"
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-700"
         >
-          {back}
-        </div>
+          <PhoneCall className="h-4 w-4" />
+          WhatsApp to activate
+        </a>
+        <a
+          href="mailto:ian@ghosthome.co.za"
+          className="inline-flex items-center gap-2 rounded-xl border border-slate-500/50 bg-transparent px-3 py-1.5 text-sm font-semibold hover:bg-white/5"
+        >
+          <Mail className="h-4 w-4" />
+          Email us
+        </a>
       </div>
     </div>
-  );
-}
-
-function CardFace({ icon, title, text, tone = "emerald" }) {
-  const tint = {
-    emerald: "text-emerald-600",
-    amber: "text-amber-600",
-    rose: "text-rose-600",
-    indigo: "text-indigo-600",
-    sky: "text-sky-600",
-    violet: "text-violet-600",
-  }[tone];
-
-  return (
-    <div className="flex h-full flex-col justify-between">
-      <div className="flex items-center gap-2">
-        <span className={`grid h-8 w-8 place-items-center rounded-full bg-slate-100 ${tint}`}>
-          {icon}
-        </span>
-        <h4 className="text-base font-semibold text-slate-900">{title}</h4>
-      </div>
-      <p className="text-sm text-slate-700">{text}</p>
-    </div>
-  );
-}
-
-function CardFaceBack({ bullets = [] }) {
-  return (
-    <ul className="flex h-full list-disc flex-col justify-center gap-2 pl-5 text-sm text-slate-700">
-      {bullets.map((b) => (
-        <li key={b}>{b}</li>
-      ))}
-    </ul>
   );
 }

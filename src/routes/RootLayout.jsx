@@ -4,27 +4,15 @@ import { Menu, X } from "lucide-react";
 import PackagesInlineNav from "../components/PackagesInlineNav.jsx";
 import CommunityStreetPackages from "../components/CommunityStreetPackages.jsx";
 
-/**
- * Site chrome: header (brand button + nav), footer, and Outlet.
- * - Brand button: ghost logo + "Ghosthome" routes to "/"
- * - Adds a top-of-page call button: "Call 079 495 0855"
- * - On "/packages", we append a tiny toolbar (Back to Features / Street page)
- *   and the Community Street Packages section AFTER the existing Packages content.
- * - Hash-aware scroll: visiting /packages#street scrolls to the Street section.
- */
 export default function RootLayout() {
   const [open, setOpen] = useState(false);
   const location = useLocation();
 
   useEffect(() => {
-    // Smooth-scroll to hash targets like /packages#street
     if (location.pathname === "/packages" && location.hash) {
       const id = location.hash.replace("#", "");
       const el = document.getElementById(id);
-      if (el) {
-        // ensure section is rendered after Outlet before scrolling
-        setTimeout(() => el.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
-      }
+      if (el) setTimeout(() => el.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
     }
   }, [location]);
 
@@ -48,9 +36,8 @@ export default function RootLayout() {
       {/* HEADER */}
       <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
-          {/* Left: Brand + Call button */}
+          {/* Brand + Call */}
           <div className="flex items-center gap-3">
-            {/* Brand button (logo + text) */}
             <Link
               to="/"
               className="inline-flex items-center gap-2 rounded-xl px-2 py-1 text-slate-800 hover:bg-slate-100"
@@ -65,7 +52,6 @@ export default function RootLayout() {
               <span className="text-base font-bold">Ghosthome</span>
             </Link>
 
-            {/* Call pill */}
             <a
               href="tel:+27794950855"
               className="inline-flex items-center rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 sm:text-sm"
@@ -80,11 +66,14 @@ export default function RootLayout() {
             <NavItem to="/features" label="Features" />
             <NavItem to="/packages" label="Packages" />
             <NavItem to="/street" label="Secure Street" />
+            <NavItem to="/signup" label="Sign up" />
             <NavItem to="/about" label="About" />
             <NavItem to="/contact" label="Contact" />
+            <NavItem to="/privacy" label="Privacy" />
+            <NavItem to="/terms" label="Terms" />
           </nav>
 
-          {/* Mobile menu button */}
+          {/* Mobile menu */}
           <button
             type="button"
             className="grid h-10 w-10 place-items-center rounded-lg text-slate-700 hover:bg-slate-100 md:hidden"
@@ -95,7 +84,6 @@ export default function RootLayout() {
           </button>
         </div>
 
-        {/* Mobile drawer */}
         {open && (
           <div className="md:hidden">
             <nav className="mx-3 mb-3 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
@@ -103,8 +91,11 @@ export default function RootLayout() {
                 <NavItem to="/features" label="Features" />
                 <NavItem to="/packages" label="Packages" />
                 <NavItem to="/street" label="Secure Street" />
+                <NavItem to="/signup" label="Sign up" />
                 <NavItem to="/about" label="About" />
                 <NavItem to="/contact" label="Contact" />
+                <NavItem to="/privacy" label="Privacy" />
+                <NavItem to="/terms" label="Terms" />
               </div>
             </nav>
           </div>
@@ -114,8 +105,6 @@ export default function RootLayout() {
       {/* CONTENT */}
       <main className="mx-auto max-w-7xl px-4">
         <Outlet />
-
-        {/* Append-only: show extra bits ONLY on /packages, below the existing page content */}
         {location.pathname === "/packages" && (
           <>
             <PackagesInlineNav />
@@ -132,7 +121,9 @@ export default function RootLayout() {
           </p>
           <p className="mt-1">
             WhatsApp: <a className="underline" href="https://wa.me/27794950855">+27 79 495 0855</a> •
-            Email: <span className="underline">ian@ghosthome.co.za</span>
+            Email: <span className="underline">ian@ghosthome.co.za</span> •
+            <Link to="/privacy" className="underline ml-1">Privacy (POPIA)</Link> •{" "}
+            <Link to="/terms" className="underline">Terms</Link>
           </p>
         </div>
       </footer>
