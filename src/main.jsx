@@ -11,11 +11,8 @@ import SecureStreet from "./routes/SecureStreet.jsx";
 import About from "./routes/About.jsx";
 import Contact from "./routes/Contact.jsx";
 import Privacy from "./routes/Privacy.jsx";
-import Terms from "./routes/Terms.jsx";
-import Signup from "./routes/Signup.jsx";
-import Pay from "./routes/Pay.jsx";
-import Upload from "./routes/Upload.jsx";
 import Admin from "./routes/Admin.jsx";
+import Upload from "./routes/Upload.jsx";
 
 const router = createBrowserRouter([
   {
@@ -29,11 +26,8 @@ const router = createBrowserRouter([
       { path: "about", element: <About /> },
       { path: "contact", element: <Contact /> },
       { path: "privacy", element: <Privacy /> },
-      { path: "terms", element: <Terms /> },
-      { path: "signup", element: <Signup /> },
-      { path: "pay", element: <Pay /> },
-      { path: "upload/:token", element: <Upload /> },
       { path: "admin", element: <Admin /> },
+      { path: "upload/:token", element: <Upload /> },
     ],
   },
 ]);

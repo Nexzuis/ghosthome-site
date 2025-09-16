@@ -1,4 +1,3 @@
-// Returns latest signups (simple admin list) — protected by shared password
 const { sql } = require('@vercel/postgres');
 
 module.exports = async (req, res) => {

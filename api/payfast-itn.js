@@ -1,4 +1,3 @@
-// PayFast ITN: verify signature + amount, then mark signup as paid and create upload token
 const { sql } = require('@vercel/postgres');
 const crypto = require('crypto');
 const querystring = require('querystring');
@@ -21,9 +20,8 @@ module.exports = async (req, res) => {
   if (req.method !== 'POST') { res.status(405).send('Method Not Allowed'); return; }
   try {
     const raw = await readBody(req);
-    const params = querystring.parse(raw); // form-encoded
+    const params = querystring.parse(raw);
 
-    // verify signature
     const passphrase = process.env.PAYFAST_PASSPHRASE || '';
     const sorted = Object.keys(params).filter(k => k !== 'signature').sort().reduce((acc, k) => (acc[k]=params[k], acc), {});
     let qs = querystring.stringify(sorted);
@@ -37,7 +35,6 @@ module.exports = async (req, res) => {
     const signup_id = params.custom_str1;
     const amount_gross = parseFloat(params.amount_gross || '0');
 
-    // fetch signup and expected amount
     const { rows } = await sql`SELECT id, plan, billing FROM signups WHERE id=${signup_id} LIMIT 1;`;
     if (rows.length === 0) { res.status(404).send('No signup'); return; }
 
@@ -47,7 +44,6 @@ module.exports = async (req, res) => {
       res.status(400).send('Bad amount'); return;
     }
 
-    // mark paid + create upload token valid for 7 days
     const token = crypto.randomBytes(24).toString('hex');
     await sql`
       UPDATE signups

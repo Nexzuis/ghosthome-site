@@ -1,4 +1,3 @@
-// Records uploaded document metadata and flags signup for review
 const { sql } = require('@vercel/postgres');
 
 module.exports = async (req, res) => {
@@ -18,15 +17,15 @@ module.exports = async (req, res) => {
     const signup_id = rows[0].id;
 
     await sql`
-      INSERT INTO documents (signup_id, kind, blob_url, filename, size_bytes, uploaded_at)
-      VALUES (${signup_id}, ${kind}, ${blob_url}, ${filename}, ${size_bytes}, NOW());
+      INSERT INTO documents (id, signup_id, kind, blob_url, filename, size_bytes, uploaded_at)
+      VALUES (gen_random_uuid(), ${signup_id}, ${kind}, ${blob_url}, ${filename}, ${size_bytes}, NOW());
     `;
 
     await sql`UPDATE signups SET verification_status='pending_review' WHERE id=${signup_id};`;
 
     await sql`
-      INSERT INTO audit_log (signup_id, actor, event, meta, created_at)
-      VALUES (${signup_id}, 'user', 'document_uploaded', ${JSON.stringify({ kind, filename })}, NOW());
+      INSERT INTO audit_log (id, signup_id, actor, event, meta, created_at)
+      VALUES (gen_random_uuid(), ${signup_id}, 'user', 'document_uploaded', ${JSON.stringify({ kind, filename })}, NOW());
     `;
 
     return res.status(200).json({ ok: true });

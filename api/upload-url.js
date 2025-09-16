@@ -1,4 +1,3 @@
-// Returns a short-lived direct upload URL + target blob URL for a given token/kind
 const { sql } = require('@vercel/postgres');
 
 module.exports = async (req, res) => {
@@ -22,7 +21,6 @@ module.exports = async (req, res) => {
       token: process.env.BLOB_READ_WRITE_TOKEN,
     });
 
-    // Return the presigned PUT URL and where the blob will live (pathname)
     return res.status(200).json({ uploadUrl: url, blobUrl: pathname });
   } catch (e) {
     console.error('upload-url error', e);
