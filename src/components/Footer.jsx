@@ -21,7 +21,7 @@ export default function Footer() {
         </Link>
 
         <p className="text-center text-sm text-slate-600">
-          © 2025 Ghosthome • A Brand of Alpha Research CC
+          © 2025 Ghosthome
         </p>
       </div>
     </footer>

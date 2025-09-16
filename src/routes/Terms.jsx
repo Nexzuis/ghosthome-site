@@ -31,8 +31,8 @@ export default function Terms() {
             Responsible Party / Operator
           </div>
           <ul className="mt-2 text-sm text-slate-700 leading-6">
-            <li><strong>Responsible Party:</strong> [CPF/HOA full legal name]</li>
-            <li><strong>Operator:</strong> Ghosthome (Alpha Research CC)</li>
+            <li><strong>Responsible Party:</strong> [Ian Jansen van Rensburg]</li>
+            <li><strong>Operator:</strong> Ghosthome ( 2025/731979/07)</li>
           </ul>
         </div>
 
