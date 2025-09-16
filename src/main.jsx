@@ -13,6 +13,7 @@ import Contact from "./routes/Contact.jsx";
 import Privacy from "./routes/Privacy.jsx";
 import Admin from "./routes/Admin.jsx";
 import Upload from "./routes/Upload.jsx";
+import Terms from "./routes/Terms.jsx";
 
 const router = createBrowserRouter([
   {
@@ -26,6 +27,7 @@ const router = createBrowserRouter([
       { path: "about", element: <About /> },
       { path: "contact", element: <Contact /> },
       { path: "privacy", element: <Privacy /> },
+      { path: "terms", element: <Terms /> },
       { path: "admin", element: <Admin /> },
       { path: "upload/:token", element: <Upload /> },
     ],
