@@ -1,6 +1,6 @@
-// Minimal diagnostics endpoint so you can see exactly what the server sees (no secrets leaked).
-module.exports = async (req, res) => {
-  const present = (v) => (v && String(v).trim().length > 0);
+// ESM — quick env check (no secrets leaked)
+export default async function handler(req, res) {
+  const present = v => (v && String(v).trim().length > 0);
   const mode = (process.env.PAYFAST_MODE || "sandbox").toLowerCase();
 
   const checks = {
@@ -16,6 +16,6 @@ module.exports = async (req, res) => {
   return res.status(200).json({
     ok: true,
     checks,
-    hint: "All must be true (except MODE which just shows 'sandbox' or 'live'). If false, set it in Vercel → Settings → Environment Variables and redeploy."
+    hint: "All must be true (except MODE which just shows 'sandbox' or 'live'). If any are false, set them in Vercel → Settings → Environment Variables and redeploy."
   });
-};
+}
