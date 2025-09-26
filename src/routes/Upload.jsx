@@ -1,127 +1,158 @@
 import React, { useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
+import { Shield, IdCard, FileText, CheckCircle, Upload as UploadIcon, ArrowLeft } from "lucide-react";
 
-/**
- * Resident upload portal (opens via /upload/:token)
- * Calls:
- *  - POST /api/upload-url  -> { uploadUrl, blobUrl }
- *  - PUT uploadUrl         -> uploads the file to Vercel Blob
- *  - POST /api/attach-document { token, kind, blob_url, filename, size_bytes }
- */
 export default function Upload() {
   const { token } = useParams();
-  const [idStatus, setIdStatus] = useState("idle");      // idle | uploading | done | error
+  const [idFile, setIdFile] = useState(null);
+  const [poaFile, setPoaFile] = useState(null);
+  const [idStatus, setIdStatus] = useState("idle");
   const [poaStatus, setPoaStatus] = useState("idle");
-  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
 
-  async function doUpload(kind, file, setStatus) {
+  async function uploadOne(kind, file, setStatus) {
     if (!file) return;
     setStatus("uploading");
-    setMessage("");
+    setError("");
+
     try {
-      // 1) ask server for a presigned upload URL
-      const res1 = await fetch("/api/upload-url", {
+      const base64 = await toBase64(file);
+      const res = await fetch("/api/attach-document", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           token,
-          kind,
+          type: kind,
           filename: file.name,
-          contentType: file.type || "application/octet-stream",
+          mimetype: file.type || "application/octet-stream",
+          size: file.size || 0,
+          base64,
         }),
       });
-      if (!res1.ok) throw new Error(`upload-url ${res1.status}`);
-      const { uploadUrl, blobUrl } = await res1.json();
-
-      // 2) PUT the file directly to Vercel Blob
-      const res2 = await fetch(uploadUrl, { method: "PUT", body: file });
-      if (!res2.ok) throw new Error(`blob put ${res2.status}`);
-
-      // 3) Attach document record to signup
-      const res3 = await fetch("/api/attach-document", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          token,
-          kind,
-          blob_url: blobUrl,
-          filename: file.name,
-          size_bytes: file.size || 0,
-        }),
-      });
-      if (!res3.ok) throw new Error(`attach ${res3.status}`);
-
+      if (!res.ok) throw new Error(`Server responded ${res.status}`);
+      const data = await res.json();
+      if (!data?.ok) throw new Error(data?.error || "Upload failed");
       setStatus("done");
-      setMessage("Thanks! Your documents have been received. We’ll review shortly.");
     } catch (e) {
-      // eslint-disable-next-line no-console
-      console.error(e);
       setStatus("error");
-      setMessage("Upload failed. Please try again or contact support.");
+      setError(e.message || "Upload failed");
     }
   }
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-10">
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-          Upload your documents
-        </h1>
-        <p className="mt-2 text-sm text-slate-600">
-          Your secure token: <span className="font-mono">{token}</span>
-        </p>
+      <div className="mb-4">
+        <Link to="/" className="inline-flex items-center gap-2 text-slate-600 hover:text-slate-800">
+          <ArrowLeft className="h-4 w-4" />
+          Back to Home
+        </Link>
+      </div>
 
-        <div className="mt-6 grid gap-6 md:grid-cols-2">
-          <div className="rounded-xl border border-slate-200 p-4">
-            <h2 className="text-sm font-semibold text-slate-800">Identity document</h2>
-            <p className="mt-1 text-xs text-slate-600">ID/Passport. JPG or PDF.</p>
-            <input
-              type="file"
-              accept=".jpg,.jpeg,.png,.pdf"
-              className="mt-3 block w-full text-sm"
-              onChange={(e) => doUpload("id", e.target.files?.[0], setIdStatus)}
-            />
-            <StatusBadge status={idStatus} />
-          </div>
-
-          <div className="rounded-xl border border-slate-200 p-4">
-            <h2 className="text-sm font-semibold text-slate-800">Proof of address</h2>
-            <p className="mt-1 text-xs text-slate-600">Utility bill/bank letter. JPG or PDF.</p>
-            <input
-              type="file"
-              accept=".jpg,.jpeg,.png,.pdf"
-              className="mt-3 block w-full text-sm"
-              onChange={(e) => doUpload("proof", e.target.files?.[0], setPoaStatus)}
-            />
-            <StatusBadge status={poaStatus} />
-          </div>
+      <header className="relative overflow-hidden rounded-3xl border border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-sky-50 p-6">
+        <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-emerald-100/70 px-3 py-1 text-xs font-semibold text-emerald-800 ring-1 ring-emerald-300">
+          <Shield className="h-4 w-4" />
+          Secure document upload
         </div>
+        <h1 className="text-3xl font-extrabold tracking-tight">
+          <span className="bg-gradient-to-r from-emerald-600 to-sky-600 bg-clip-text text-transparent">
+            Verify your access
+          </span>
+        </h1>
+        <p className="mt-2 max-w-2xl text-slate-700">
+          Upload your <strong>ID</strong> and <strong>Proof of Address</strong>. Supported: JPG/PNG/PDF.
+        </p>
+      </header>
 
-        {message && (
-          <div className="mt-6 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
-            {message}
+      <div className="mt-8 grid gap-6 md:grid-cols-2">
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="mb-3 flex items-center gap-2">
+            <div className="grid h-9 w-9 place-items-center rounded-full bg-emerald-50 ring-1 ring-emerald-200">
+              <IdCard className="h-5 w-5 text-emerald-600" />
+            </div>
+            <h2 className="text-base font-semibold text-slate-900">ID document</h2>
           </div>
-        )}
-      </section>
-      <p className="mt-3 text-xs text-slate-500">
-        We store files in secure cloud storage. POPIA compliant. If you uploaded the wrong file,
-        contact ian@ghosthome.co.za and we’ll assist.
+          <div className="rounded-xl border border-dashed border-slate-300 p-4">
+            <input
+              type="file"
+              accept=".jpg,.jpeg,.png,.pdf"
+              onChange={(e) => setIdFile(e.target.files?.[0] || null)}
+              className="block w-full text-sm text-slate-700 file:mr-3 file:rounded-lg file:border-0 file:bg-emerald-600 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-emerald-700"
+            />
+            {idFile ? <p className="mt-2 text-xs text-slate-600">Selected: {idFile.name}</p> : null}
+            <button
+              type="button"
+              onClick={() => uploadOne("id", idFile, setIdStatus)}
+              disabled={!idFile || idStatus === "uploading"}
+              className="mt-3 inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-white hover:bg-emerald-700 disabled:opacity-60"
+            >
+              {idStatus === "uploading" ? "Uploading…" : <>
+                <UploadIcon className="h-4 w-4" /> Upload ID
+              </>}
+            </button>
+            {idStatus === "done" ? (
+              <p className="mt-2 inline-flex items-center gap-2 text-sm text-emerald-700">
+                <CheckCircle className="h-4 w-4" /> ID uploaded
+              </p>
+            ) : null}
+          </div>
+        </section>
+
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="mb-3 flex items-center gap-2">
+            <div className="grid h-9 w-9 place-items-center rounded-full bg-sky-50 ring-1 ring-sky-200">
+              <FileText className="h-5 w-5 text-sky-600" />
+            </div>
+            <h2 className="text-base font-semibold text-slate-900">Proof of Address</h2>
+          </div>
+          <div className="rounded-xl border border-dashed border-slate-300 p-4">
+            <input
+              type="file"
+              accept=".jpg,.jpeg,.png,.pdf"
+              onChange={(e) => setPoaFile(e.target.files?.[0] || null)}
+              className="block w-full text-sm text-slate-700 file:mr-3 file:rounded-lg file:border-0 file:bg-sky-600 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-sky-700"
+            />
+            {poaFile ? <p className="mt-2 text-xs text-slate-600">Selected: {poaFile.name}</p> : null}
+            <button
+              type="button"
+              onClick={() => uploadOne("poa", poaFile, setPoaStatus)}
+              disabled={!poaFile || poaStatus === "uploading"}
+              className="mt-3 inline-flex items-center gap-2 rounded-xl bg-sky-600 px-4 py-2 text-white hover:bg-sky-700 disabled:opacity-60"
+            >
+              {poaStatus === "uploading" ? "Uploading…" : <>
+                <UploadIcon className="h-4 w-4" /> Upload Proof of Address
+              </>}
+            </button>
+            {poaStatus === "done" ? (
+              <p className="mt-2 inline-flex items-center gap-2 text-sm text-emerald-700">
+                <CheckCircle className="h-4 w-4" /> Proof of Address uploaded
+              </p>
+            ) : null}
+          </div>
+        </section>
+      </div>
+
+      {error ? (
+        <p className="mt-4 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-800 ring-1 ring-rose-200">
+          {error}
+        </p>
+      ) : null}
+
+      <p className="mt-6 text-xs text-slate-500">
+        Files are encrypted in transit and stored securely. If you uploaded the wrong file, re-upload — we keep the latest.
       </p>
     </main>
   );
 }
 
-function StatusBadge({ status }) {
-  const map = {
-    idle: { text: "Waiting for file…", cls: "text-slate-500 bg-slate-50 border-slate-200" },
-    uploading: { text: "Uploading…", cls: "text-amber-700 bg-amber-50 border-amber-200" },
-    done: { text: "Uploaded", cls: "text-emerald-700 bg-emerald-50 border-emerald-200" },
-    error: { text: "Error", cls: "text-rose-700 bg-rose-50 border-rose-200" },
-  };
-  const m = map[status] || map.idle;
-  return (
-    <div className={`mt-3 inline-flex rounded-md border px-2 py-0.5 text-xs ${m.cls}`}>
-      {m.text}
-    </div>
-  );
+function toBase64(file) {
+  return new Promise((resolve, reject) => {
+    const fr = new FileReader();
+    fr.onload = () => {
+      const result = String(fr.result || "");
+      const idx = result.indexOf(",");
+      resolve(idx >= 0 ? result.slice(idx + 1) : result);
+    };
+    fr.onerror = reject;
+    fr.readAsDataURL(file);
+  });
 }

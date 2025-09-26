@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useLocation, Link } from "react-router-dom";
+import { CreditCard, Shield, Loader2 } from "lucide-react";
 
 export default function Pay() {
   const { search } = useLocation();
@@ -9,6 +10,40 @@ export default function Pay() {
   const amount = Number(params.get("amount") || 0);
   const signupId = params.get("signupId") || "";
   const recurring = params.get("recurring") === "true";
+
+  const [pf, setPf] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  async function createCheckout() {
+    setBusy(true); setError("");
+    try {
+      const res = await fetch("/api/payfast-initiate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          plan,
+          billing,
+          amount,
+          signupId,
+        }),
+      });
+      if (!res.ok) throw new Error(`Server responded ${res.status}`);
+      const data = await res.json();
+      if (!data?.ok) throw new Error(data?.error || "Failed to init PayFast");
+      setPf(data);
+    } catch (e) {
+      setError(e.message || "Failed to start PayFast");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // Auto-initiate on mount for convenience
+  useEffect(() => {
+    createCheckout();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-10">
@@ -32,30 +67,50 @@ export default function Pay() {
           {signupId ? <li>Signup ID: {signupId}</li> : null}
         </ul>
 
-        <div className="mt-5 flex flex-wrap gap-3">
-          {/* Placeholder button until PayFast live */}
-          <button
-            type="button"
-            disabled
-            className="cursor-not-allowed rounded-xl bg-slate-300 px-4 py-2 font-semibold text-white"
-            title="PayFast integration coming next"
-          >
-            Pay with PayFast (coming soon)
-          </button>
+        {/* Error */}
+        {error ? (
+          <p className="mt-3 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-800 ring-1 ring-rose-200">
+            {error}
+          </p>
+        ) : null}
 
-          <a
-            className="rounded-xl bg-emerald-600 px-4 py-2 font-semibold text-white hover:bg-emerald-700"
-            href={`mailto:ian@ghosthome.co.za?subject=Ghosthome%20Sign-up&body=Plan:%20${encodeURIComponent(plan)}%0ABilling:%20${encodeURIComponent(billing)}%0AAmount:%20R${amount}%0ASignupId:%20${encodeURIComponent(signupId || "N/A")}`}
+        <div className="mt-5 flex flex-wrap items-center gap-3">
+          {/* Live PayFast form (rendered after /api/payfast-initiate) */}
+          {pf ? (
+            <form action={pf.action} method="post">
+              {Object.entries(pf.fields).map(([k, v]) => (
+                <input key={k} type="hidden" name={k} value={String(v)} />
+              ))}
+              <button
+                type="submit"
+                className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 font-semibold text-white shadow-sm hover:bg-emerald-700"
+              >
+                <CreditCard className="h-4 w-4" />
+                Pay with PayFast
+              </button>
+            </form>
+          ) : (
+            <button
+              type="button"
+              onClick={createCheckout}
+              disabled={busy}
+              className="inline-flex items-center gap-2 rounded-xl bg-slate-800 px-4 py-2 font-semibold text-white hover:bg-slate-900 disabled:opacity-60"
+            >
+              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Shield className="h-4 w-4" />}
+              {busy ? "Preparing checkout…" : "Retry PayFast"}
+            </button>
+          )}
+
+          <Link
+            to="/street"
+            className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-slate-700 hover:bg-slate-50"
           >
-            Email confirmation to Ghosthome
-          </a>
-          <Link to="/street" className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-slate-700 hover:bg-slate-50">
             Back to Street page
           </Link>
         </div>
 
         <p className="mt-3 text-xs text-slate-500">
-          We’ll enable secure PayFast checkout here (sandbox/live). You’ll be able to manage cancellations any time.
+          Your card is processed by PayFast. We receive secure notifications (ITN) to activate your access automatically.
         </p>
       </div>
     </main>
