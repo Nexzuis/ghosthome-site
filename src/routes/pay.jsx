@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, Link } from "react-router-dom";
-import { CreditCard, Shield, Loader2 } from "lucide-react";
+import { CreditCard, Shield, Loader2, Bug } from "lucide-react";
 
 export default function Pay() {
   const { search } = useLocation();
@@ -14,23 +14,28 @@ export default function Pay() {
   const [pf, setPf] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [missing, setMissing] = useState(null);
+  const [diag, setDiag] = useState(null);
 
   async function createCheckout() {
-    setBusy(true); setError("");
+    setBusy(true); setError(""); setMissing(null);
     try {
       const res = await fetch("/api/payfast-initiate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          plan,
-          billing,
-          amount,
-          signupId,
-        }),
+        body: JSON.stringify({ plan, billing, amount, signupId }),
       });
-      if (!res.ok) throw new Error(`Server responded ${res.status}`);
-      const data = await res.json();
-      if (!data?.ok) throw new Error(data?.error || "Failed to init PayFast");
+
+      const text = await res.text();
+      let data = null;
+      try { data = JSON.parse(text); } catch { /* keep text for debugging */ }
+
+      if (!res.ok || !data?.ok) {
+        const msg = data?.error || `HTTP ${res.status}`;
+        setError(msg);
+        if (data?.missing) setMissing(data.missing);
+        return;
+      }
       setPf(data);
     } catch (e) {
       setError(e.message || "Failed to start PayFast");
@@ -39,7 +44,16 @@ export default function Pay() {
     }
   }
 
-  // Auto-initiate on mount for convenience
+  async function runDiagnostics() {
+    try {
+      const r = await fetch("/api/payfast-diagnose");
+      const j = await r.json();
+      setDiag(j);
+    } catch (e) {
+      setDiag({ ok: false, error: e.message });
+    }
+  }
+
   useEffect(() => {
     createCheckout();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -67,15 +81,33 @@ export default function Pay() {
           {signupId ? <li>Signup ID: {signupId}</li> : null}
         </ul>
 
-        {/* Error */}
         {error ? (
-          <p className="mt-3 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-800 ring-1 ring-rose-200">
-            {error}
-          </p>
+          <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">
+            <p className="font-semibold">Server error</p>
+            <p className="mt-1">{error}</p>
+            {Array.isArray(missing) && missing.length ? (
+              <p className="mt-2">
+                Missing: <span className="font-mono">{missing.join(", ")}</span>
+              </p>
+            ) : null}
+            <div className="mt-3">
+              <button
+                type="button"
+                onClick={runDiagnostics}
+                className="inline-flex items-center gap-2 rounded-lg bg-slate-800 px-3 py-1.5 text-white hover:bg-slate-900"
+              >
+                <Bug className="h-4 w-4" /> Run diagnostics
+              </button>
+            </div>
+            {diag ? (
+              <pre className="mt-3 overflow-x-auto rounded-lg bg-white p-3 text-xs ring-1 ring-slate-200">
+                {JSON.stringify(diag, null, 2)}
+              </pre>
+            ) : null}
+          </div>
         ) : null}
 
         <div className="mt-5 flex flex-wrap items-center gap-3">
-          {/* Live PayFast form (rendered after /api/payfast-initiate) */}
           {pf ? (
             <form action={pf.action} method="post">
               {Object.entries(pf.fields).map(([k, v]) => (

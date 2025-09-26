@@ -28,20 +28,20 @@ module.exports = async (req, res) => {
     }
 
     const {
-      plan = "basic",         // basic | standard
-      billing = "monthly",    // monthly | annual
-      amount = 0,             // number
-      signupId = "",          // uuid (optional)
+      plan = "basic",         // "basic" | "standard"
+      billing = "monthly",    // "monthly" | "annual"
+      amount = 0,
+      signupId = "",
       name = "",
       email = "",
     } = req.body || {};
 
     const mode = (process.env.PAYFAST_MODE || "sandbox").toLowerCase();
-    const merchant_id = process.env.PAYFAST_MERCHANT_ID || "";
-    const merchant_key = process.env.PAYFAST_MERCHANT_KEY || "";
-    const passphrase = process.env.PAYFAST_PASSPHRASE || "";
+    const merchant_id = (process.env.PAYFAST_MERCHANT_ID || "").trim();
+    const merchant_key = (process.env.PAYFAST_MERCHANT_KEY || "").trim();
+    const passphrase = (process.env.PAYFAST_PASSPHRASE || "").trim();
 
-    // Auto-fill return/cancel/notify from current host if not provided:
+    // Auto-fill return/cancel/notify from current host if not provided
     const host = (req.headers["x-forwarded-host"] || req.headers.host || "").replace(/\/+$/, "");
     const base = host ? `https://${host}` : "";
     const return_url = (process.env.PAYFAST_RETURN_URL || (base ? `${base}/pay?result=success` : "")).trim();
@@ -52,9 +52,9 @@ module.exports = async (req, res) => {
     if (!merchant_id) missing.push("PAYFAST_MERCHANT_ID");
     if (!merchant_key) missing.push("PAYFAST_MERCHANT_KEY");
     if (!passphrase) missing.push("PAYFAST_PASSPHRASE");
-    if (!return_url) missing.push("PAYFAST_RETURN_URL (or host-derived fallback)");
-    if (!cancel_url) missing.push("PAYFAST_CANCEL_URL (or host-derived fallback)");
-    if (!notify_url) missing.push("PAYFAST_NOTIFY_URL (or host-derived fallback)");
+    if (!return_url) missing.push("PAYFAST_RETURN_URL");
+    if (!cancel_url) missing.push("PAYFAST_CANCEL_URL");
+    if (!notify_url) missing.push("PAYFAST_NOTIFY_URL");
 
     if (missing.length) {
       console.error("PayFast config missing:", missing);
@@ -70,11 +70,10 @@ module.exports = async (req, res) => {
       return res.status(400).json({ ok: false, error: "Invalid amount" });
     }
 
-    // Subscription flags (PayFast recurring). Frequency 3 = monthly.
-    // Annual can be handled as monthly at annual/12 or consult PayFast for true annual frequency availability.
+    // Subscription (monthly for now)
     const subscription = true;
-    const frequency = billing === "monthly" ? 3 : 3; // keep monthly for now; switch once PayFast confirms annual frequency
-    const cycles = 0; // 0 = indefinite (if allowed)
+    const frequency = billing === "monthly" ? 3 : 3; // use monthly until PayFast enables a true annual frequency on your account
+    const cycles = 0; // 0 = indefinite if allowed
 
     const item_name = billing === "monthly"
       ? (plan === "standard" ? "Ghosthome Street Access — 4 cams / 2 accounts — Monthly"
