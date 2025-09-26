@@ -1,86 +1,68 @@
 // src/routes/pay.jsx
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function Pay() {
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
+  const [err, setErr] = useState("");
 
-  // You can read plan/billing from querystring; here we fix "basic/monthly" for clarity.
-  const plan = "basic";
-  const billing = "monthly";
-
-  async function startPayfast() {
+  async function start() {
     setBusy(true);
-    setError("");
+    setErr("");
     try {
-      const r = await fetch("/api/payfast-initiate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan, billing })
-      });
-      const data = await r.json();
-
-      if (!r.ok || !data?.ok) {
-        throw new Error(data?.error || "Server error");
+      const r = await fetch("/api/payfast-initiate", { method: "POST" });
+      const j = await r.json();
+      if (!r.ok || !j.ok) {
+        setErr(j?.error || "Server error");
+        return;
       }
-
-      // Build a real POST form so the browser does NOT rewrite the querystring.
-      const form = document.createElement("form");
-      form.method = "POST";
-      form.action = data.engine;
-
-      Object.entries(data.fields).forEach(([k, v]) => {
-        const input = document.createElement("input");
-        input.type = "hidden";
-        input.name = k;
-        input.value = v;
-        form.appendChild(input);
-      });
-
-      document.body.appendChild(form);
-      form.submit();
+      // optional one-off console check
+      // console.log(j.debug?.signatureBase, j.debug?.signature);
+      window.location.href = j.redirect;
     } catch (e) {
-      setError(e.message || "Failed to start payment");
+      setErr(e.message || "Failed to fetch");
     } finally {
       setBusy(false);
     }
   }
 
+  useEffect(() => {
+    // no auto-submit; user clicks
+  }, []);
+
   return (
-    <div className="max-w-3xl mx-auto px-4 py-10">
+    <div className="max-w-3xl mx-auto px-6 py-16">
       <h1 className="text-3xl font-semibold">Payment</h1>
+      <p className="mt-2">You’re subscribing to <b>BASIC</b> (monthly) — <b>R99</b>.</p>
 
-      <div className="mt-6 rounded-2xl border bg-white shadow-sm">
-        <div className="p-6 border-b bg-emerald-50 rounded-t-2xl">
-          <p className="font-medium">Subscription: billed monthly until you cancel.</p>
-        </div>
-
-        <div className="p-6 space-y-2 text-slate-800">
-          <div>Plan: <b>{plan}</b></div>
-          <div>Billing: <b>{billing}</b></div>
-          <div>Amount: <b>R99</b></div>
-
-          {error && (
-            <div className="mt-4 rounded-md bg-rose-50 text-rose-700 p-3 text-sm">
-              <div className="font-semibold">Server error</div>
-              <div>{error}</div>
-            </div>
-          )}
-
-          <div className="mt-6 flex gap-3">
-            <button
-              onClick={startPayfast}
-              disabled={busy}
-              className="inline-flex items-center rounded-xl px-4 py-2 bg-black text-white hover:bg-gray-800 disabled:opacity-50"
-            >
-              {busy ? "Working..." : "Pay with PayFast"}
-            </button>
-            <a href="/street" className="inline-flex items-center rounded-xl px-4 py-2 border">
-              Back to Street page
-            </a>
-          </div>
-        </div>
+      <div className="mt-6 rounded-xl border p-5 bg-green-50 border-green-200 text-green-800">
+        <p className="font-medium">Subscription: billed monthly until you cancel.</p>
+        <ul className="list-disc pl-6 mt-2">
+          <li>Plan: basic</li>
+          <li>Billing: monthly</li>
+          <li>Amount: R99</li>
+        </ul>
       </div>
+
+      {err ? (
+        <div className="mt-6 rounded-xl border p-5 bg-red-50 border-red-200 text-red-800">
+          <p className="font-medium">Server error</p>
+          <p className="text-sm mt-2">{err}</p>
+        </div>
+      ) : null}
+
+      <div className="mt-6 flex items-center gap-3">
+        <button
+          onClick={start}
+          disabled={busy}
+          className="inline-flex items-center rounded-xl px-5 py-3 bg-black text-white hover:bg-gray-900 disabled:opacity-60"
+        >
+          {busy ? "Contacting PayFast…" : "Pay with PayFast"}
+        </button>
+      </div>
+
+      <p className="mt-8 text-sm text-slate-500">
+        Your card is processed by PayFast. We receive secure notifications (ITN) to activate your access automatically.
+      </p>
     </div>
   );
 }
