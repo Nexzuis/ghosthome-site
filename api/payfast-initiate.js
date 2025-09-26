@@ -1,12 +1,12 @@
 // /api/payfast-initiate.js
 // Builds a PayFast signature and auto-POSTs a form to PayFast.
-// Uses RAW signature base by default (most reliable), and a lean field set.
+// This version signs using URL-ENCODED values (PayFast doc style) and sends a lean field set.
 
 import crypto from "crypto";
 
 // --- CONFIG TOGGLE: change these if needed ---
 const USE_SUBSCRIPTIONS = true;     // true => subscription; false => once-off minimal
-const SIGN_STYLE = "raw";           // "raw" (recommended) or "enc" (urlencoded)
+const SIGN_STYLE = "enc";           // "enc" (urlencoded, recommended by PF docs) or "raw"
 
 // PHP-style urlencode (spaces -> '+') for encoded style
 const enc = (v) =>
@@ -44,7 +44,7 @@ function sigEncoded(fields, passphrase) {
   return { base, signature: md5(base) };
 }
 
-// Build signature from RAW (UNENCODED) values (what some PF stacks actually check)
+// Build signature from RAW (UNENCODED) values
 function sigRaw(fields, passphrase) {
   const f = sortClean(fields);
   const base =
@@ -84,7 +84,7 @@ export default async function handler(req, res) {
       return;
     }
 
-    // --- Prices & names (as you’ve been using) ---
+    // --- Prices & names ---
     let amount = 99.0;
     let itemName = "Ghosthome Street Access - 2 cams / 1 account - Monthly";
     if (plan === "basic" && term === "yearly") {
@@ -120,7 +120,7 @@ export default async function handler(req, res) {
         item_name: itemName,
       };
     } else {
-      // Subscription (monthly/yearly) – still lean, no custom_str, no description
+      // Subscription – minimal
       const frequency = term === "yearly" ? 7 : 3; // PF: 7=yearly, 3=monthly
       fields = {
         merchant_id: MERCHANT_ID,
@@ -137,7 +137,7 @@ export default async function handler(req, res) {
       };
     }
 
-    // Compute both styles; we will send whichever SIGN_STYLE chooses
+    // Compute both styles; send ENC (per SIGN_STYLE)
     const pass = PASSPHRASE; // may be empty if PF account has no passphrase
     const encoded = sigEncoded(fields, pass);
     const raw = sigRaw(fields, pass);
