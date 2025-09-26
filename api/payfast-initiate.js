@@ -1,148 +1,143 @@
-// ESM version — builds a signed PayFast payload server-side
-// Required ENV:
-//   PAYFAST_MODE = sandbox | live
-//   PAYFAST_MERCHANT_ID
-//   PAYFAST_MERCHANT_KEY
-//   PAYFAST_PASSPHRASE
-// Optional (auto-fills from host if empty):
-//   PAYFAST_RETURN_URL, PAYFAST_CANCEL_URL, PAYFAST_NOTIFY_URL
+// /api/payfast-initiate.js
+import crypto from "crypto";
 
-import crypto from "node:crypto";
+const pfEncode = (v) =>
+  encodeURIComponent(String(v))
+    .replace(/%20/g, "+")      // PHP urlencode uses + for spaces
+    .replace(/[!'()*]/g, (c) => "%" + c.charCodeAt(0).toString(16).toUpperCase());
 
-/**
- * PayFast expects the signature to be generated using the
- * exact same encoding as an HTML x-www-form-urlencoded POST.
- * That means spaces MUST be "+" (not %20).
- */
-function encodeForm(str) {
-  return encodeURIComponent(str)
-    .replace(/%20/g, "+") // ← the critical bit for PayFast
-    .replace(/[!'()*]/g, c => `%${c.charCodeAt(0).toString(16).toUpperCase()}`);
-}
+const buildSignature = (fields, passphrase) => {
+  // 1) Remove empty values & the signature key if present
+  const cleaned = Object.fromEntries(
+    Object.entries(fields).filter(
+      ([k, v]) => k !== "signature" && v !== "" && v !== null && v !== undefined
+    )
+  );
 
-/** Keep descriptions strictly ASCII to avoid cross-encoding drift */
-function sanitizePF(text) {
-  if (text == null) return "";
-  let t = String(text);
-  t = t.replace(/[–—−]/g, "-")
-       .replace(/[“”„‟]/g, '"')
-       .replace(/[’‘‚‛]/g, "'")
-       .replace(/…/g, "...");
-  t = t.normalize("NFKD").replace(/[^\x20-\x7E]/g, "");
-  t = t.replace(/\s+/g, " ").trim();
-  return t;
-}
+  // 2) Sort by key (ascending)
+  const ordered = Object.keys(cleaned).sort().map((k) => `${k}=${pfEncode(cleaned[k])}`);
 
-/** Build signature AND return the exact base string we hashed (for sandbox debug) */
-function buildSignatureAndBase(fields, passphrase) {
-  const keys = Object.keys(fields).sort();
-  const query = keys.map(k => `${k}=${encodeForm(String(fields[k] ?? ""))}`).join("&");
-  const withPass = passphrase ? `${query}&passphrase=${encodeForm(passphrase)}` : query;
-  const signature = crypto.createHash("md5").update(withPass).digest("hex");
-  return { signature, base: withPass };
-}
+  // 3) Append passphrase if present (encoded the same way)
+  if (passphrase) ordered.push(`passphrase=${pfEncode(passphrase)}`);
 
-function pfEndpoint(mode) {
-  return mode === "live"
-    ? "https://www.payfast.co.za/eng/process"
-    : "https://sandbox.payfast.co.za/eng/process";
-}
+  // 4) MD5 hash
+  const base = ordered.join("&");
+  const sig = crypto.createHash("md5").update(base).digest("hex");
+  return { base, sig };
+};
 
 export default async function handler(req, res) {
   try {
-    if (req.method !== "POST") {
-      return res.status(405).json({ ok: false, error: "Method not allowed" });
-    }
+    if (req.method !== "POST") return res.status(405).json({ ok: false, error: "Method not allowed" });
 
     const {
-      plan = "basic",            // "basic" | "standard"
-      billing = "monthly",       // "monthly" | "annual"
-      amount = 0,
-      signupId = "",
-      name = "",
-      email = "",
+      plan = "basic",                 // "basic" | "plus"
+      billing = "monthly",            // "monthly" | "annual"
+      amount,                         // "99.00" or "1099.00" etc (as string)
+      name,                           // buyer name (optional)
+      email,                          // buyer email (optional)
     } = req.body || {};
 
-    const mode = (process.env.PAYFAST_MODE || "sandbox").toLowerCase();
-    const merchant_id = (process.env.PAYFAST_MERCHANT_ID || "").trim();
-    const merchant_key = (process.env.PAYFAST_MERCHANT_KEY || "").trim();
-    const passphrase  = (process.env.PAYFAST_PASSPHRASE  || "").trim();
+    // ---- ENV checks ----
+    const MODE = process.env.PAYFAST_MODE || "sandbox";
+    const merchant_id  = process.env.PAYFAST_MERCHANT_ID;
+    const merchant_key = process.env.PAYFAST_MERCHANT_KEY;
+    const passphrase   = process.env.PAYFAST_PASSPHRASE || "";
+    const return_url   = process.env.PAYFAST_RETURN_URL; // e.g. https://ghosthome.co.za/pay?result=success
+    const cancel_url   = process.env.PAYFAST_CANCEL_URL; // e.g. https://ghosthome.co.za/pay?result=cancel
+    const notify_url   = process.env.PAYFAST_NOTIFY_URL; // e.g. https://ghosthome.co.za/api/payfast-itn
 
-    // Auto-fill return/cancel/notify from current host if not provided
-    const host = (req.headers["x-forwarded-host"] || req.headers.host || "").replace(/\/+$/, "");
-    const base = host ? `https://${host}` : "";
-    const return_url = (process.env.PAYFAST_RETURN_URL || (base ? `${base}/pay?result=success` : "")).trim();
-    const cancel_url = (process.env.PAYFAST_CANCEL_URL || (base ? `${base}/pay?result=cancel` : "")).trim();
-    const notify_url = (process.env.PAYFAST_NOTIFY_URL || (base ? `${base}/api/payfast-itn` : "")).trim();
-
-    const missing = [];
-    if (!merchant_id) missing.push("PAYFAST_MERCHANT_ID");
-    if (!merchant_key) missing.push("PAYFAST_MERCHANT_KEY");
-    if (!return_url)  missing.push("PAYFAST_RETURN_URL");
-    if (!cancel_url)  missing.push("PAYFAST_CANCEL_URL");
-    if (!notify_url)  missing.push("PAYFAST_NOTIFY_URL");
-    if (missing.length) {
-      console.error("PayFast config missing:", missing);
-      return res.status(500).json({ ok: false, error: "Missing PayFast configuration", missing });
+    if (!merchant_id || !merchant_key || !return_url || !cancel_url || !notify_url) {
+      return res.status(500).json({
+        ok: false,
+        error: "Missing PayFast configuration",
+        missing: {
+          PAYFAST_MODE: MODE,
+          PAYFAST_MERCHANT_ID: !!merchant_id,
+          PAYFAST_MERCHANT_KEY: !!merchant_key,
+          PAYFAST_PASSPHRASE: passphrase ? true : "(empty or not set — allowed)",
+          PAYFAST_RETURN_URL: !!return_url,
+          PAYFAST_CANCEL_URL: !!cancel_url,
+          PAYFAST_NOTIFY_URL: !!notify_url,
+        },
+      });
     }
 
-    const cents = (Number(amount) || 0).toFixed(2);
-    if (Number(cents) <= 0) {
-      return res.status(400).json({ ok: false, error: "Invalid amount" });
-    }
-
-    // Subscriptions: monthly (frequency=3). Annual will still run via monthly subscription for now.
-    const subscription = true;
-    const frequency = 3; // monthly
-    const cycles = 0;    // indefinite
-
-    // ASCII-only names help avoid signature drift
+    // ---- Describe the item clearly (no commas needed, but fine if present) ----
     const item_name =
-      billing === "monthly"
-        ? (plan === "standard"
-            ? "Ghosthome Street Access - 4 cams / 2 accounts - Monthly"
-            : "Ghosthome Street Access - 2 cams / 1 account - Monthly")
-        : (plan === "standard"
+      plan === "plus"
+        ? (billing === "annual"
             ? "Ghosthome Street Access - 4 cams / 2 accounts - Annual"
-            : "Ghosthome Street Access - 2 cams / 1 account - Annual");
+            : "Ghosthome Street Access - 4 cams / 2 accounts - Monthly")
+        : (billing === "annual"
+            ? "Ghosthome Street Access - 2 cams / 1 account - Annual"
+            : "Ghosthome Street Access - 2 cams / 1 account - Monthly");
 
     const item_description = "Community live-view access with night notifications (customisable hours).";
 
-    // EXACT set of fields we will post
-    const fields = {
+    // ---- Core PayFast fields (do NOT include empty values) ----
+    const pfFields = {
       merchant_id,
       merchant_key,
       return_url,
       cancel_url,
       notify_url,
-      amount: cents,
-      item_name: sanitizePF(item_name),
-      item_description: sanitizePF(item_description),
-      email_address: email ? sanitizePF(email) : undefined,
-      name_first: name ? sanitizePF(name.split(" ")[0]) : undefined,
-      name_last:  name ? sanitizePF(name.split(" ").slice(1).join(" ")) : undefined,
-      custom_str1: signupId || "",
+
+      // order fields
+      amount: Number(amount).toFixed(2), // ensure 2 decimals as string
+      item_name,
+      item_description,
+
+      // metadata (omit empty values automatically)
+      custom_str1: "",             // <- stays empty -> will be dropped when signing
       custom_str2: plan,
       custom_str3: billing,
-      // Recurring:
-      subscription_type: subscription ? 1 : undefined,
-      recurring_amount:  subscription ? cents : undefined,
-      frequency:         subscription ? frequency : undefined,
-      cycles:            subscription ? cycles : undefined
+
+      // Recurring subscription
+      subscription_type: 1,        // 1 = subscription
+      recurring_amount: Number(amount).toFixed(2),
+      frequency: billing === "annual" ? 6 : 3,  // 6 = monthly, 3 = monthly too? (PayFast codes: 3=monthly, 6=biannual) — we stick to 3 for monthly
+      cycles: 0,                   // 0 = indefinite
     };
 
-    // Remove undefined to match the posted form exactly
-    Object.keys(fields).forEach(k => fields[k] === undefined && delete fields[k]);
+    // Optional buyer details — only add if present (so we don't sign empty values)
+    if (name && name.trim()) pfFields["name_first"] = name.trim();
+    if (email && email.trim()) pfFields["email_address"] = email.trim();
 
-    const { signature, base: signature_base } = buildSignatureAndBase(fields, passphrase);
-    fields.signature = signature;
+    // Build signature
+    const { base, sig } = buildSignature(pfFields, passphrase);
 
-    // Include signature_base for sandbox debug so you can compare if needed
-    const debug = mode === "sandbox" ? { debug_signature_base: signature_base } : {};
+    // Attach signature (PayFast requires the field)
+    const signedFields = {
+      ...Object.fromEntries(Object.entries(pfFields).filter(([_, v]) => v !== "" && v !== null && v !== undefined)),
+      signature: sig,
+    };
 
-    return res.status(200).json({ ok: true, action: pfEndpoint(mode), fields, ...debug });
-  } catch (e) {
-    console.error("payfast-initiate fatal error", e);
-    return res.status(500).json({ ok: false, error: "Server error" });
+    // Post target
+    const endpoint =
+      MODE === "live"
+        ? "https://www.payfast.co.za/eng/process"
+        : "https://sandbox.payfast.co.za/eng/process";
+
+    // Return a tiny auto-posting form (avoids CORS “failed to fetch”)
+    const formInputs = Object.entries(signedFields)
+      .map(([k, v]) => `<input type="hidden" name="${k}" value="${String(v).replace(/"/g, "&quot;")}" />`)
+      .join("");
+
+    const html = `<!doctype html>
+<html><head><meta charset="utf-8"><title>Redirecting to PayFast…</title></head>
+<body onload="document.forms[0].submit()">
+  <form action="${endpoint}" method="post">
+    ${formInputs}
+    <noscript><button type="submit">Continue to PayFast</button></noscript>
+  </form>
+</body></html>`;
+
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    return res.status(200).send(html);
+
+  } catch (err) {
+    console.error("payfast-initiate error:", err);
+    return res.status(500).json({ ok: false, error: err.message || "Server error" });
   }
 }
