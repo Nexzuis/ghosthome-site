@@ -1,78 +1,110 @@
-import React, { useMemo } from "react";
+// src/routes/pay.jsx
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 
-// This page DOES NOT fetch JSON. It just opens the API which returns an auto-POST form.
+const plans = {
+  basic: { monthly: 99, annual: 1099 },
+  plus:  { monthly: 149, annual: 1299 },
+};
+
 export default function Pay() {
   const [sp] = useSearchParams();
-  const plan = (sp.get("plan") || "basic").toLowerCase();     // basic | plus
-  const term = (sp.get("term") || "monthly").toLowerCase();   // monthly | yearly
+  const plan = sp.get("plan") || "basic";
+  const billing = sp.get("billing") || "monthly";
+  const amount = useMemo(() => {
+    const p = plans[plan] || plans.basic;
+    return p[billing] ?? p.monthly;
+  }, [plan, billing]);
 
-  const info = useMemo(() => {
-    if (plan === "basic" && term === "monthly") return { label: "BASIC (monthly)", amount: 99 };
-    if (plan === "basic" && term === "yearly")  return { label: "BASIC (12 months)", amount: 1099 };
-    if (plan === "plus"  && term === "monthly") return { label: "PLUS (monthly)",  amount: 149 };
-    if (plan === "plus"  && term === "yearly")  return { label: "PLUS (12 months)", amount: 1299 };
-    return { label: "BASIC (monthly)", amount: 99 };
-  }, [plan, term]);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [diag, setDiag] = useState(null);
 
-  const gotoPayfast = () => {
-    // the API returns HTML that auto-POSTs to PayFast
-    window.location.href = `/api/payfast-initiate?plan=${encodeURIComponent(plan)}&term=${encodeURIComponent(term)}`;
-  };
+  async function startPayfast() {
+    setBusy(true);
+    setError("");
+    setDiag(null);
+    try {
+      const r = await fetch("/api/payfast-initiate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan, billing, amount }),
+      });
 
-  const showDebug = () => {
-    window.open(
-      `/api/payfast-initiate?plan=${encodeURIComponent(plan)}&term=${encodeURIComponent(term)}&debug=1`,
-      "_blank",
-      "noopener"
-    );
-  };
+      // If Vercel returned an HTML error page, guarding JSON parse:
+      const text = await r.text();
+      let json;
+      try { json = JSON.parse(text); } catch { throw new Error("Server returned non-JSON"); }
+
+      if (!r.ok || !json.ok) {
+        setDiag(json);
+        throw new Error(json?.error || `HTTP ${r.status}`);
+      }
+
+      window.location.href = json.redirect; // go to PayFast
+    } catch (e) {
+      setError(e.message || "Server error");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-10">
-      <h1 className="text-3xl font-bold text-slate-900">Payment</h1>
-      <p className="mt-2 text-slate-700">
-        You’re subscribing to <span className="font-semibold">{info.label}</span> —{" "}
-        <span className="font-semibold">R{info.amount}</span>.
-      </p>
+    <div className="min-h-[60vh] bg-slate-50">
+      <div className="mx-auto max-w-3xl px-4 py-10">
+        <h1 className="text-3xl font-bold text-slate-900">Payment</h1>
 
-      <div className="mt-6 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-        <div className="rounded-lg bg-emerald-50 p-3 text-emerald-900 text-sm">
-          Subscription: billed {term === "yearly" ? "annually" : "monthly"} until you cancel.
+        <div className="mt-6 rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div className="border-b border-slate-200 px-6 py-4">
+            <p className="text-slate-700">
+              You’re subscribing to <span className="font-semibold uppercase">{plan}</span> ({billing}) — <span className="font-semibold">R{amount}</span>.
+            </p>
+          </div>
+
+          <div className="px-6 py-4">
+            <div className="mb-4 rounded-xl bg-emerald-50 px-4 py-3 text-emerald-900">
+              <p className="font-medium">Subscription: billed monthly until you cancel.</p>
+              <ul className="ml-5 list-disc text-sm">
+                <li>Plan: {plan}</li>
+                <li>Billing: {billing}</li>
+                <li>Amount: R{amount}</li>
+              </ul>
+            </div>
+
+            {error && (
+              <div className="mb-4 rounded-xl bg-rose-50 px-4 py-3 text-rose-900">
+                <p className="font-semibold">Server error</p>
+                <p className="text-sm">{error}</p>
+                {diag && (
+                  <pre className="mt-2 max-h-40 overflow-auto rounded bg-white/70 p-3 text-xs text-slate-800">
+{JSON.stringify(diag, null, 2)}
+                  </pre>
+                )}
+              </div>
+            )}
+
+            <div className="flex items-center gap-3">
+              <button
+                onClick={startPayfast}
+                disabled={busy}
+                className="inline-flex items-center rounded-xl bg-slate-900 px-5 py-3 font-medium text-white hover:bg-slate-800 disabled:opacity-50"
+              >
+                {busy ? "Connecting…" : "Pay with PayFast"}
+              </button>
+              <Link
+                to="/street"
+                className="rounded-xl border border-slate-300 px-4 py-3 text-slate-700 hover:bg-slate-50"
+              >
+                Back to Street page
+              </Link>
+            </div>
+
+            <p className="mt-6 text-xs text-slate-500">
+              Your card is processed by PayFast. We receive secure notifications (ITN) to activate your access automatically.
+            </p>
+          </div>
         </div>
-
-        <ul className="mt-3 list-disc pl-5 text-slate-700 text-sm">
-          <li>Plan: {plan}</li>
-          <li>Billing: {term}</li>
-          <li>Amount: R{info.amount}</li>
-        </ul>
-
-        <div className="mt-6 flex flex-wrap gap-3">
-          <button
-            onClick={gotoPayfast}
-            className="rounded-xl bg-slate-900 px-4 py-2 text-white font-semibold hover:bg-slate-800"
-          >
-            Pay with PayFast
-          </button>
-          <button
-            onClick={showDebug}
-            className="rounded-xl border border-slate-300 px-4 py-2 text-slate-700 hover:bg-slate-50"
-            title="See exact signature base & fields (opens a new tab)"
-          >
-            Run diagnostics
-          </button>
-          <Link
-            to="/street"
-            className="rounded-xl border border-slate-300 px-4 py-2 text-slate-700 hover:bg-slate-50"
-          >
-            Back to Street page
-          </Link>
-        </div>
-
-        <p className="mt-4 text-xs text-slate-500">
-          Your card is processed by PayFast. We receive secure notifications (ITN) to activate your access automatically.
-        </p>
       </div>
-    </main>
+    </div>
   );
 }

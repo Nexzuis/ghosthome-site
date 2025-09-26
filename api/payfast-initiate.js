@@ -1,116 +1,106 @@
 // /api/payfast-initiate.js
-// Vercel serverless function – ESM syntax
-
-import crypto from "crypto";
-
-/** RFC3986 encode (spaces => %20, not '+') */
-function enc(v) {
-  // encodeURIComponent already does RFC3986; extra replace keeps it strict
-  return encodeURIComponent(String(v)).replace(/[!'()*]/g, c =>
-    `%${c.charCodeAt(0).toString(16).toUpperCase()}`
-  );
-}
-
-/** Build PayFast MD5 signature – sort keys, encode values, append passphrase if present */
-function makeSignature(fields, passphrase) {
-  // Exclude empty/undefined and the 'signature' itself
-  const clean = {};
-  for (const [k, v] of Object.entries(fields)) {
-    if (k === "signature") continue;
-    if (v === undefined || v === null || v === "") continue;
-    clean[k] = v;
-  }
-
-  const base = Object.keys(clean)
-    .sort() // alphabetical by key
-    .map((k) => `${k}=${enc(clean[k])}`)
-    .join("&")
-    + (passphrase ? `&passphrase=${enc(passphrase)}` : "");
-
-  const md5 = crypto.createHash("md5").update(base, "utf8").digest("hex");
-  return { base, md5 };
-}
+import crypto from "node:crypto";
 
 export default async function handler(req, res) {
+  // This endpoint only accepts POST
+  if (req.method !== "POST") {
+    res.setHeader("Allow", "POST");
+    return res.status(405).json({ ok: false, error: "Method not allowed" });
+  }
+
   try {
-    if (req.method !== "POST") {
-      return res.status(405).json({ ok: false, error: "Method not allowed" });
-    }
+    const {
+      plan = "basic",              // "basic" | "plus"
+      billing = "monthly",         // "monthly" | "annual"
+      amount = 99,                 // number
+    } = req.body || {};
 
-    // ---- ENV ----
-    const MODE = (process.env.PAYFAST_MODE || "sandbox").toLowerCase(); // sandbox | live
-    const MERCHANT_ID = process.env.PAYFAST_MERCHANT_ID;
-    const MERCHANT_KEY = process.env.PAYFAST_MERCHANT_KEY;
-    const RETURN_URL = process.env.PAYFAST_RETURN_URL;
-    const CANCEL_URL = process.env.PAYFAST_CANCEL_URL;
-    const NOTIFY_URL = process.env.PAYFAST_NOTIFY_URL;
-    const PASSPHRASE = process.env.PAYFAST_PASSPHRASE || ""; // leave blank if none set in Sandbox
-
-    const missing = [];
-    if (!MERCHANT_ID) missing.push("PAYFAST_MERCHANT_ID");
-    if (!MERCHANT_KEY) missing.push("PAYFAST_MERCHANT_KEY");
-    if (!RETURN_URL) missing.push("PAYFAST_RETURN_URL");
-    if (!CANCEL_URL) missing.push("PAYFAST_CANCEL_URL");
-    if (!NOTIFY_URL) missing.push("PAYFAST_NOTIFY_URL");
-    if (!MODE) missing.push("PAYFAST_MODE");
-    if (missing.length) {
-      return res.status(500).json({
-        ok: false,
-        error: "Missing PayFast configuration",
-        missing,
-      });
-    }
-
-    const engine =
+    // --- Env checks
+    const MODE = (process.env.PAYFAST_MODE || "sandbox").toLowerCase();
+    const ENGINE =
       MODE === "live"
         ? "https://www.payfast.co.za/eng/process"
         : "https://sandbox.payfast.co.za/eng/process";
 
-    // ---- INPUT FROM CLIENT ----
-    const { plan = "basic", billing = "monthly", amount = 99 } = req.body || {};
-    const amountStr = Number(amount).toFixed(2);
+    const MID   = process.env.PAYFAST_MERCHANT_ID;
+    const MKEY  = process.env.PAYFAST_MERCHANT_KEY;
+    const PASS  = process.env.PAYFAST_PASSPHRASE || "";
+    const RURL  = process.env.PAYFAST_RETURN_URL;
+    const CURL  = process.env.PAYFAST_CANCEL_URL;
+    const NURL  = process.env.PAYFAST_NOTIFY_URL;
 
-    // Keep the field set minimal while we debug signature
+    if (!MID || !MKEY || !RURL || !CURL || !NURL) {
+      return res.status(500).json({
+        ok: false,
+        error: "Missing PayFast configuration",
+        missing: {
+          PAYFAST_MERCHANT_ID: !!MID,
+          PAYFAST_MERCHANT_KEY: !!MKEY,
+          PAYFAST_RETURN_URL: !!RURL,
+          PAYFAST_CANCEL_URL: !!CURL,
+          PAYFAST_NOTIFY_URL: !!NURL,
+        },
+      });
+    }
+
+    // --- Build PayFast fields (subscription)
+    // frequency: 3 = monthly, cycles: 0 = indefinite
+    const niceAmount = Number(amount).toFixed(2);
+    const itemName =
+      billing === "monthly"
+        ? (plan === "plus"
+            ? "Ghosthome Street Access - 4 cams / 2 accounts - Monthly"
+            : "Ghosthome Street Access - 2 cams / 1 account - Monthly")
+        : (plan === "plus"
+            ? "Ghosthome Street Access - 4 cams / 2 accounts - 12 months"
+            : "Ghosthome Street Access - 2 cams / 1 account - 12 months");
+
     const fields = {
-      merchant_id: MERCHANT_ID,
-      merchant_key: MERCHANT_KEY,
-      return_url: RETURN_URL,
-      cancel_url: CANCEL_URL,
-      notify_url: NOTIFY_URL,
-
-      // Display
-      item_name: "Ghosthome Street Access - 2 cams / 1 account - Monthly",
-
-      // Once-off (setup) amount shown on the button:
-      amount: amountStr,
-
-      // Subscription params
-      subscription_type: 1,     // 1 = subscription
-      recurring_amount: amountStr,
-      frequency: 3,             // 3 = monthly
-      cycles: 0,                // 0 = indefinite
+      merchant_id: MID,
+      merchant_key: MKEY,
+      return_url: RURL,
+      cancel_url: CURL,
+      notify_url: NURL,
+      amount: niceAmount,
+      item_name: itemName,
+      // recurring billing:
+      subscription_type: 1,
+      recurring_amount: niceAmount,
+      frequency: 3,
+      cycles: 0,
     };
 
-    // ---- SIGNATURE ----
-    const { base, md5 } = makeSignature(fields, PASSPHRASE);
-    const signature = md5;
+    // --- Signature per PayFast spec:
+    // 1) Sort keys ascending
+    // 2) URL-encode values
+    // 3) Join as querystring
+    // 4) Append &passphrase=YOUR_PASSPHRASE (if set)
+    // 5) MD5 hash
+    const encForSig = new URLSearchParams();
+    Object.keys(fields)
+      .sort()
+      .forEach((k) => encForSig.append(k, String(fields[k])));
 
-    // Build redirect URL (normal query encoding is fine here)
-    const params = new URLSearchParams({ ...fields, signature });
-    const redirect = `${engine}?${params.toString()}`;
+    if (PASS) encForSig.append("passphrase", PASS);
 
-    // Optional: verbose debug for you (remove later)
+    const signature = crypto
+      .createHash("md5")
+      .update(encForSig.toString(), "utf8")
+      .digest("hex");
+
+    // Add signature to outgoing fields
+    const outgoing = { ...fields, signature };
+
+    // Final redirect URL
+    const qs = new URLSearchParams();
+    Object.keys(outgoing).forEach((k) => qs.append(k, String(outgoing[k])));
+    const redirect = `${ENGINE}?${qs.toString()}`;
+
     return res.status(200).json({
       ok: true,
-      mode: MODE,
-      engine,
-      signature_base: base,
-      signature,
-      fields: { ...fields, signature },
       redirect,
     });
   } catch (err) {
-    console.error("payfast-initiate error", err);
-    return res.status(500).json({ ok: false, error: "Server error" });
+    return res.status(500).json({ ok: false, error: err.message || "Server error" });
   }
 }
