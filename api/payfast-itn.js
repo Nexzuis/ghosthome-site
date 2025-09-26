@@ -1,65 +1,73 @@
 // api/payfast-itn.js
-const crypto = require("crypto");
+import crypto from "crypto";
 
-function safeVal(v) {
-  return v === undefined || v === null ? "" : String(v);
+function pfEncode(value) {
+  return encodeURIComponent(String(value))
+    .replace(/[!'()*]/g, (c) => "%" + c.charCodeAt(0).toString(16).toUpperCase());
 }
 
-function buildSignatureFromObject(obj, passphrase) {
-  const filtered = {};
-  for (const [k, v] of Object.entries(obj || {})) {
-    if (k === "signature") continue;
-    const sv = safeVal(v);
-    if (sv !== "") filtered[k] = sv;
+function buildSignatureString(fields, passphrase) {
+  const keys = Object.keys(fields).filter((k) => fields[k] !== undefined && fields[k] !== null).sort();
+  const pairs = keys.map((k) => `${k}=${pfEncode(fields[k])}`);
+  if (passphrase && String(passphrase).length > 0) {
+    pairs.push(`passphrase=${pfEncode(passphrase)}`);
   }
-  const pairs = Object.keys(filtered)
-    .sort()
-    .map((k) => `${k}=${encodeURIComponent(filtered[k]).replace(/%20/g, "+")}`);
-
-  if (passphrase) {
-    pairs.push(
-      `passphrase=${encodeURIComponent(passphrase).replace(/%20/g, "+")}`
-    );
-  }
-
-  const base = pairs.join("&");
-  const signature = crypto.createHash("md5").update(base).digest("hex");
-  return { base, signature };
+  return pairs.join("&");
 }
 
-module.exports = async (req, res) => {
+function md5(str) {
+  return crypto.createHash("md5").update(str, "utf8").digest("hex");
+}
+
+export default async function handler(req, res) {
   try {
     if (req.method !== "POST") {
-      return res.status(405).send("Method Not Allowed");
+      res.status(405).send("Method Not Allowed");
+      return;
     }
 
-    const posted =
-      req.body && typeof req.body === "object"
-        ? req.body
-        : JSON.parse(req.body || "{}");
-
-    const { PAYFAST_PASSPHRASE, PAYFAST_MERCHANT_ID } = process.env;
-
-    // 1) signature check
-    const postedSig = String(posted.signature || "");
-    const { signature } = buildSignatureFromObject(posted, PAYFAST_PASSPHRASE);
-
-    // 2) merchant sanity
-    const merchantOk =
-      String(posted.merchant_id || "") === String(PAYFAST_MERCHANT_ID || "");
-
-    const sigOk = postedSig && postedSig === signature;
-
-    // TODO: optional server-side validation call to PayFast /eng/query/validate
-    // Skipped here; we just acknowledge if sig & merchant look fine.
-
-    if (sigOk && merchantOk) {
-      // You could update DB here (mark subscription pending/active)
-      return res.status(200).send("OK");
+    // Vercel parses URL-encoded bodies for Node functions only if content-type is correct.
+    // We handle both JSON and urlencoded just in case.
+    let incoming = {};
+    if (req.headers["content-type"]?.includes("application/json")) {
+      incoming = req.body || {};
+    } else {
+      // Collect raw body
+      const raw = await new Promise((resolve, reject) => {
+        let data = "";
+        req.on("data", (c) => (data += c));
+        req.on("end", () => resolve(data));
+        req.on("error", reject);
+      });
+      incoming = Object.fromEntries(new URLSearchParams(raw));
     }
 
-    return res.status(400).send("BAD");
+    // Extract and re-create signature
+    const postedSig = incoming.signature || incoming["signature"] || "";
+    const { signature, ...withoutSig } = incoming;
+
+    const passphrase = process.env.PAYFAST_PASSPHRASE || "";
+    const base = buildSignatureString(withoutSig, passphrase);
+    const calc = md5(base);
+
+    const verified = postedSig === calc;
+
+    // TODO: here you would persist the payment/subscription status to your DB
+    console.log("PAYFAST ITN ▸ verified:", verified, {
+      postedSig,
+      calc,
+      event: incoming.payment_status || "n/a",
+      name: incoming.item_name,
+      meta: {
+        custom_str2: incoming.custom_str2,
+        custom_str3: incoming.custom_str3,
+      },
+    });
+
+    // Always respond 200 to acknowledge receipt (PayFast requires it)
+    res.status(200).send("OK");
   } catch (e) {
-    return res.status(500).send("ERROR");
+    console.error("ITN error:", e);
+    res.status(200).send("OK");
   }
-};
+}
