@@ -1,7 +1,3 @@
-// ESM serverless function for starting a PayFast checkout
-// Alias path to avoid extensions that block 'payfast' in XHR URLs.
-// Keeps ASCII sanitising and x-www-form-urlencoded (“+”) signature encoding.
-
 import crypto from "node:crypto";
 
 /** Encode exactly like application/x-www-form-urlencoded (spaces -> "+") */
@@ -59,7 +55,6 @@ export default async function handler(req, res) {
     const merchant_key = (process.env.PAYFAST_MERCHANT_KEY || "").trim();
     const passphrase  = (process.env.PAYFAST_PASSPHRASE  || "").trim();
 
-    // Build default URLs from current host if not provided
     const host = (req.headers["x-forwarded-host"] || req.headers.host || "").replace(/\/+$/, "");
     const base = host ? `https://${host}` : "";
     const return_url = (process.env.PAYFAST_RETURN_URL || (base ? `${base}/pay?result=success` : "")).trim();
@@ -73,7 +68,6 @@ export default async function handler(req, res) {
     if (!cancel_url)  missing.push("PAYFAST_CANCEL_URL");
     if (!notify_url)  missing.push("PAYFAST_NOTIFY_URL");
     if (missing.length) {
-      console.error("PayFast config missing:", missing);
       return res.status(500).json({ ok: false, error: "Missing PayFast configuration", missing });
     }
 
@@ -82,8 +76,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ ok: false, error: "Invalid amount" });
     }
 
-    // Treat all as subscriptions; monthly (frequency=3). Annual can be handled later with a different product.
-    const subscription = true;
+    const subscription = true; // always recurring for now
     const frequency = 3; // monthly
     const cycles = 0;    // indefinite
 
@@ -98,7 +91,7 @@ export default async function handler(req, res) {
 
     const item_description = "Community live-view access with night notifications (customisable hours).";
 
-    // Exact field set to post & sign
+    // ---- Build fields (NO empty values) ----
     const fields = {
       merchant_id,
       merchant_key,
@@ -108,10 +101,6 @@ export default async function handler(req, res) {
       amount: cents,
       item_name: sanitizePF(item_name),
       item_description: sanitizePF(item_description),
-      email_address: email ? sanitizePF(email) : undefined,
-      name_first: name ? sanitizePF(name.split(" ")[0]) : undefined,
-      name_last:  name ? sanitizePF(name.split(" ").slice(1).join(" ")) : undefined,
-      custom_str1: signupId || "",
       custom_str2: plan,
       custom_str3: billing,
       // Recurring flags
@@ -121,7 +110,20 @@ export default async function handler(req, res) {
       cycles:            subscription ? cycles : undefined
     };
 
-    Object.keys(fields).forEach(k => fields[k] === undefined && delete fields[k]);
+    // Optional only if present
+    if (signupId) fields.custom_str1 = signupId;
+    if (email)     fields.email_address = sanitizePF(email);
+    if (name) {
+      const parts = String(name).trim().split(/\s+/);
+      fields.name_first = sanitizePF(parts[0] || "");
+      fields.name_last  = sanitizePF(parts.slice(1).join(" "));
+      if (!fields.name_last) delete fields.name_last; // avoid empty
+    }
+
+    // Remove any undefined/empty-string values (PayFast ignores them in signature)
+    Object.keys(fields).forEach(k => {
+      if (fields[k] === undefined || fields[k] === "") delete fields[k];
+    });
 
     const { signature, base: signature_base } = buildSignatureAndBase(fields, passphrase);
     fields.signature = signature;
