@@ -9,32 +9,35 @@
 
 import crypto from "node:crypto";
 
-/** RFC3986 encoding (spaces => %20, not +) */
-function encodeRFC3986(str) {
-  return encodeURIComponent(str).replace(/[!'()*]/g, c => `%${c.charCodeAt(0).toString(16).toUpperCase()}`);
+/**
+ * PayFast expects the signature to be generated using the
+ * exact same encoding as an HTML x-www-form-urlencoded POST.
+ * That means spaces MUST be "+" (not %20).
+ */
+function encodeForm(str) {
+  return encodeURIComponent(str)
+    .replace(/%20/g, "+") // ← the critical bit for PayFast
+    .replace(/[!'()*]/g, c => `%${c.charCodeAt(0).toString(16).toUpperCase()}`);
 }
 
-/** Make sure text PayFast sees is clean ASCII (avoid curly quotes/em-dashes etc.) */
+/** Keep descriptions strictly ASCII to avoid cross-encoding drift */
 function sanitizePF(text) {
   if (text == null) return "";
   let t = String(text);
-  // Replace smart punctuation with ASCII
   t = t.replace(/[–—−]/g, "-")
        .replace(/[“”„‟]/g, '"')
        .replace(/[’‘‚‛]/g, "'")
        .replace(/…/g, "...");
-  // Strip non-printable / non-ASCII
   t = t.normalize("NFKD").replace(/[^\x20-\x7E]/g, "");
-  // Collapse whitespace
   t = t.replace(/\s+/g, " ").trim();
   return t;
 }
 
-/** Build signature from the EXACT fields we will post; also return the base string used for hashing */
+/** Build signature AND return the exact base string we hashed (for sandbox debug) */
 function buildSignatureAndBase(fields, passphrase) {
   const keys = Object.keys(fields).sort();
-  const query = keys.map(k => `${k}=${encodeRFC3986(String(fields[k] ?? ""))}`).join("&");
-  const withPass = passphrase ? `${query}&passphrase=${encodeRFC3986(passphrase)}` : query;
+  const query = keys.map(k => `${k}=${encodeForm(String(fields[k] ?? ""))}`).join("&");
+  const withPass = passphrase ? `${query}&passphrase=${encodeForm(passphrase)}` : query;
   const signature = crypto.createHash("md5").update(withPass).digest("hex");
   return { signature, base: withPass };
 }
@@ -75,7 +78,6 @@ export default async function handler(req, res) {
     const missing = [];
     if (!merchant_id) missing.push("PAYFAST_MERCHANT_ID");
     if (!merchant_key) missing.push("PAYFAST_MERCHANT_KEY");
-    // You may have passphrase toggle OFF in PayFast; if so, leave PAYFAST_PASSPHRASE empty here and in portal.
     if (!return_url)  missing.push("PAYFAST_RETURN_URL");
     if (!cancel_url)  missing.push("PAYFAST_CANCEL_URL");
     if (!notify_url)  missing.push("PAYFAST_NOTIFY_URL");
@@ -89,12 +91,12 @@ export default async function handler(req, res) {
       return res.status(400).json({ ok: false, error: "Invalid amount" });
     }
 
-    // Keep monthly flags for subscription (PayFast supports monthly frequency=3)
+    // Subscriptions: monthly (frequency=3). Annual will still run via monthly subscription for now.
     const subscription = true;
     const frequency = 3; // monthly
-    const cycles = 0;    // 0 = indefinite (if allowed)
+    const cycles = 0;    // indefinite
 
-    // ASCII-only names to avoid signature drift on PayFast side
+    // ASCII-only names help avoid signature drift
     const item_name =
       billing === "monthly"
         ? (plan === "standard"
@@ -106,7 +108,7 @@ export default async function handler(req, res) {
 
     const item_description = "Community live-view access with night notifications (customisable hours).";
 
-    // Build EXACT field set we will post
+    // EXACT set of fields we will post
     const fields = {
       merchant_id,
       merchant_key,
@@ -129,13 +131,13 @@ export default async function handler(req, res) {
       cycles:            subscription ? cycles : undefined
     };
 
-    // Remove undefined so we only sign/post what exists
+    // Remove undefined to match the posted form exactly
     Object.keys(fields).forEach(k => fields[k] === undefined && delete fields[k]);
 
     const { signature, base: signature_base } = buildSignatureAndBase(fields, passphrase);
     fields.signature = signature;
 
-    // Include the base only in sandbox so you can compare if needed
+    // Include signature_base for sandbox debug so you can compare if needed
     const debug = mode === "sandbox" ? { debug_signature_base: signature_base } : {};
 
     return res.status(200).json({ ok: true, action: pfEndpoint(mode), fields, ...debug });
