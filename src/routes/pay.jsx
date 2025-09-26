@@ -1,107 +1,83 @@
 // src/routes/pay.jsx
-import { useEffect, useMemo, useState } from "react";
-import { useSearchParams, Link } from "react-router-dom";
-
-const plans = {
-  basic: { monthly: 99, annual: 1099 },
-  plus:  { monthly: 149, annual: 1299 },
-};
+import { useMemo, useState } from "react";
 
 export default function Pay() {
-  const [sp] = useSearchParams();
-  const plan = sp.get("plan") || "basic";
-  const billing = sp.get("billing") || "monthly";
-  const amount = useMemo(() => {
-    const p = plans[plan] || plans.basic;
-    return p[billing] ?? p.monthly;
-  }, [plan, billing]);
-
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [diag, setDiag] = useState(null);
+
+  // You can read plan/billing from querystring; here we fix "basic/monthly" for clarity.
+  const plan = "basic";
+  const billing = "monthly";
 
   async function startPayfast() {
     setBusy(true);
     setError("");
-    setDiag(null);
     try {
       const r = await fetch("/api/payfast-initiate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan, billing, amount }),
+        body: JSON.stringify({ plan, billing })
       });
+      const data = await r.json();
 
-      // If Vercel returned an HTML error page, guarding JSON parse:
-      const text = await r.text();
-      let json;
-      try { json = JSON.parse(text); } catch { throw new Error("Server returned non-JSON"); }
-
-      if (!r.ok || !json.ok) {
-        setDiag(json);
-        throw new Error(json?.error || `HTTP ${r.status}`);
+      if (!r.ok || !data?.ok) {
+        throw new Error(data?.error || "Server error");
       }
 
-      window.location.href = json.redirect; // go to PayFast
+      // Build a real POST form so the browser does NOT rewrite the querystring.
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = data.engine;
+
+      Object.entries(data.fields).forEach(([k, v]) => {
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = k;
+        input.value = v;
+        form.appendChild(input);
+      });
+
+      document.body.appendChild(form);
+      form.submit();
     } catch (e) {
-      setError(e.message || "Server error");
+      setError(e.message || "Failed to start payment");
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <div className="min-h-[60vh] bg-slate-50">
-      <div className="mx-auto max-w-3xl px-4 py-10">
-        <h1 className="text-3xl font-bold text-slate-900">Payment</h1>
+    <div className="max-w-3xl mx-auto px-4 py-10">
+      <h1 className="text-3xl font-semibold">Payment</h1>
 
-        <div className="mt-6 rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <div className="border-b border-slate-200 px-6 py-4">
-            <p className="text-slate-700">
-              You’re subscribing to <span className="font-semibold uppercase">{plan}</span> ({billing}) — <span className="font-semibold">R{amount}</span>.
-            </p>
-          </div>
+      <div className="mt-6 rounded-2xl border bg-white shadow-sm">
+        <div className="p-6 border-b bg-emerald-50 rounded-t-2xl">
+          <p className="font-medium">Subscription: billed monthly until you cancel.</p>
+        </div>
 
-          <div className="px-6 py-4">
-            <div className="mb-4 rounded-xl bg-emerald-50 px-4 py-3 text-emerald-900">
-              <p className="font-medium">Subscription: billed monthly until you cancel.</p>
-              <ul className="ml-5 list-disc text-sm">
-                <li>Plan: {plan}</li>
-                <li>Billing: {billing}</li>
-                <li>Amount: R{amount}</li>
-              </ul>
+        <div className="p-6 space-y-2 text-slate-800">
+          <div>Plan: <b>{plan}</b></div>
+          <div>Billing: <b>{billing}</b></div>
+          <div>Amount: <b>R99</b></div>
+
+          {error && (
+            <div className="mt-4 rounded-md bg-rose-50 text-rose-700 p-3 text-sm">
+              <div className="font-semibold">Server error</div>
+              <div>{error}</div>
             </div>
+          )}
 
-            {error && (
-              <div className="mb-4 rounded-xl bg-rose-50 px-4 py-3 text-rose-900">
-                <p className="font-semibold">Server error</p>
-                <p className="text-sm">{error}</p>
-                {diag && (
-                  <pre className="mt-2 max-h-40 overflow-auto rounded bg-white/70 p-3 text-xs text-slate-800">
-{JSON.stringify(diag, null, 2)}
-                  </pre>
-                )}
-              </div>
-            )}
-
-            <div className="flex items-center gap-3">
-              <button
-                onClick={startPayfast}
-                disabled={busy}
-                className="inline-flex items-center rounded-xl bg-slate-900 px-5 py-3 font-medium text-white hover:bg-slate-800 disabled:opacity-50"
-              >
-                {busy ? "Connecting…" : "Pay with PayFast"}
-              </button>
-              <Link
-                to="/street"
-                className="rounded-xl border border-slate-300 px-4 py-3 text-slate-700 hover:bg-slate-50"
-              >
-                Back to Street page
-              </Link>
-            </div>
-
-            <p className="mt-6 text-xs text-slate-500">
-              Your card is processed by PayFast. We receive secure notifications (ITN) to activate your access automatically.
-            </p>
+          <div className="mt-6 flex gap-3">
+            <button
+              onClick={startPayfast}
+              disabled={busy}
+              className="inline-flex items-center rounded-xl px-4 py-2 bg-black text-white hover:bg-gray-800 disabled:opacity-50"
+            >
+              {busy ? "Working..." : "Pay with PayFast"}
+            </button>
+            <a href="/street" className="inline-flex items-center rounded-xl px-4 py-2 border">
+              Back to Street page
+            </a>
           </div>
         </div>
       </div>

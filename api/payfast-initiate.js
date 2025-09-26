@@ -1,142 +1,110 @@
-// api/payfast-initiate.js
-// Minimal PayFast redirect builder with a correct MD5 signature.
-// Works in Vercel serverless (Node runtime). Accepts POST or GET.
-
+// /api/payfast-initiate.js
 import crypto from "crypto";
+
+const required = (name, v) => {
+  if (!v) throw new Error(`Missing env: ${name}`);
+  return v;
+};
+
+// PHP urlencode behaviour: encodeURIComponent, but spaces must be '+'
+function phpUrlEncode(value) {
+  return encodeURIComponent(String(value)).replace(/%20/g, "+");
+}
+
+function buildSignature(fields, passphrase) {
+  // Remove empty values and "signature" itself
+  const list = Object.entries(fields)
+    .filter(([k, v]) => k !== "signature" && v !== undefined && v !== null && String(v) !== "");
+
+  // Sort by key (ASCII)
+  list.sort(([a], [b]) => a.localeCompare(b));
+
+  // Build name=value pairs with PHP urlencode semantics
+  const pairs = list.map(([k, v]) => `${phpUrlEncode(k)}=${phpUrlEncode(v)}`);
+
+  if (passphrase) {
+    pairs.push(`passphrase=${phpUrlEncode(passphrase)}`);
+  }
+
+  const base = pairs.join("&");
+  const signature = crypto.createHash("md5").update(base).digest("hex");
+  return { signature, base };
+}
 
 export default async function handler(req, res) {
   try {
-    // 1) Read env
-    const MODE = (process.env.PAYFAST_MODE || "sandbox").toLowerCase(); // "sandbox" | "live"
-    const PASS = process.env.PAYFAST_PASSPHRASE || "";                  // e.g. 1234567891011
-    const MERCHANT_ID  = process.env.PAYFAST_MERCHANT_ID;
-    const MERCHANT_KEY = process.env.PAYFAST_MERCHANT_KEY;
-
-    const RETURN_URL = process.env.PAYFAST_RETURN_URL || "https://ghosthome.co.za/pay?result=success";
-    const CANCEL_URL = process.env.PAYFAST_CANCEL_URL || "https://ghosthome.co.za/pay?result=cancel";
-    const NOTIFY_URL = process.env.PAYFAST_NOTIFY_URL || "https://ghosthome.co.za/api/payfast-itn";
-
-    if (!MERCHANT_ID || !MERCHANT_KEY || !RETURN_URL || !CANCEL_URL || !NOTIFY_URL) {
-      return res.status(500).json({ ok: false, error: "Missing PayFast configuration." });
-    }
-
-    // 2) Read payload (supports POST body JSON or URL query for quick testing)
-    let payload = {};
-    if (req.method === "POST") {
-      try {
-        payload = typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {});
-      } catch {
-        payload = {};
-      }
-    } else if (req.method === "GET") {
-      payload = req.query || {};
-    } else {
+    if (req.method !== "POST") {
+      res.setHeader("Allow", "POST");
       return res.status(405).json({ ok: false, error: "Method not allowed" });
     }
 
-    // Plans (very simple defaults; your UI can pass plan/billing if you want)
-    const plan       = (payload.plan || "basic").toString();
-    const billing    = (payload.billing || "monthly").toString();
+    // You can pass plan/billing in the body; we only need amount & description here.
+    const { plan = "basic", billing = "monthly" } = (req.body || {});
 
-    // Amounts (format to exactly two decimals)
-    const amount = Number(payload.amount ?? 99).toFixed(2);          // “setup/first” amount
-    const rAmount = Number(payload.recurring_amount ?? 99).toFixed(2);
+    // ----- ENV -----
+    const MODE = process.env.PAYFAST_MODE || "sandbox"; // "sandbox" | "live"
+    const MERCHANT_ID = required("PAYFAST_MERCHANT_ID", process.env.PAYFAST_MERCHANT_ID);
+    const MERCHANT_KEY = required("PAYFAST_MERCHANT_KEY", process.env.PAYFAST_MERCHANT_KEY);
+    const PASSPHRASE  = required("PAYFAST_PASSPHRASE", process.env.PAYFAST_PASSPHRASE);
 
-    // 3) Build the FIELD SET that will be SENT to PayFast
-    //   Do not include passphrase here — it’s only used in the signature string.
-    //   Keep ONLY non-empty fields. PayFast sorts by key when verifying.
-    const sendFields = {
-      merchant_id:  MERCHANT_ID,
-      merchant_key: MERCHANT_KEY,
-      return_url:   RETURN_URL,
-      cancel_url:   CANCEL_URL,
-      notify_url:   NOTIFY_URL,
+    const RETURN_URL  = required("PAYFAST_RETURN_URL", process.env.PAYFAST_RETURN_URL);
+    const CANCEL_URL  = required("PAYFAST_CANCEL_URL", process.env.PAYFAST_CANCEL_URL);
+    const NOTIFY_URL  = required("PAYFAST_NOTIFY_URL", process.env.PAYFAST_NOTIFY_URL);
 
-      amount:       amount, // once-off/first amount
-      item_name:    "Ghosthome Street Access - 2 cams / 1 account - Monthly",
-
-      // Minimal recurring fields for a monthly subscription
-      subscription_type: 1,         // 1 = recurring
-      recurring_amount:  rAmount,   // what gets debited every cycle
-      frequency:         3,         // 3 = monthly
-      cycles:            0          // 0 = indefinite
-
-      // If you want metadata later you can add e.g. custom_str1/2/3
-      // custom_str2: plan,
-      // custom_str3: billing,
+    // ----- PRICING -----
+    // (Adjust if you add more)
+    const catalogue = {
+      basic: {
+        monthly: { amount: 99.00, name: "Ghosthome Street Access - 2 cams / 1 account - Monthly" },
+        yearly:  { amount: 1099.00, name: "Ghosthome Street Access - 2 cams / 1 account - 12 months" }
+      },
+      plus: {
+        monthly: { amount: 149.00, name: "Ghosthome Street Access - 4 cams / 2 accounts - Monthly" },
+        yearly:  { amount: 1299.00, name: "Ghosthome Street Access - 4 cams / 2 accounts - 12 months" }
+      }
     };
 
-    // remove empties just in case
-    Object.keys(sendFields).forEach((k) => {
-      const v = sendFields[k];
-      if (v === null || v === undefined || v === "") delete sendFields[k];
-    });
+    const entry = (catalogue[plan] && catalogue[plan][billing]) || catalogue.basic.monthly;
+    const amount = Number(entry.amount).toFixed(2);
+    const item_name = entry.name;
 
-    // 4) Build the signature BASE using the SAME encoder PayFast uses.
-    //    Use URLSearchParams so spaces -> '+' (form encoding).
-    //    Keys must be sorted A..Z and values trimmed; exclude 'signature'.
-    const sortedKeys = Object.keys(sendFields).filter(k => k !== "signature").sort();
-
-    const paramsForSignature = new URLSearchParams();
-    for (const k of sortedKeys) {
-      const val = String(sendFields[k]).trim();
-      if (val !== "") paramsForSignature.append(k, val);
-    }
-
-    // Append &passphrase=... TO THE STRING USED FOR HASHING ONLY (do NOT send it)
-    // Also URL-encode the passphrase the same way (URLSearchParams handles that)
-    if (PASS) {
-      const p = new URLSearchParams();
-      p.append("passphrase", PASS);
-      // IMPORTANT: append as raw “&passphrase=…” text to the signature string
-      // using the same form-encoding style (spaces -> '+')
-      const passChunk = `&${p.toString()}`; // e.g. "&passphrase=1234567891011"
-      const base = paramsForSignature.toString() + passChunk;
-
-      // 5) MD5
-      var signature = crypto.createHash("md5").update(base, "utf8").digest("hex");
-
-      // 6) Build redirect (the fields you SEND, plus 'signature')
-      const qs = new URLSearchParams(paramsForSignature); // clone of the exact same encoding
-      qs.append("signature", signature);
-
-      const engine = MODE === "live"
+    const engine =
+      MODE === "live"
         ? "https://www.payfast.co.za/eng/process"
         : "https://sandbox.payfast.co.za/eng/process";
 
-      const redirect = `${engine}?${qs.toString()}`;
+    // ----- FIELDS TO SUBMIT (subscriptions via “simplified” fields) -----
+    // For monthly/annual, use PayFast “recurring billing” fields.
+    // frequency: 3 = monthly, 6 = biannual, 12 = annual (docs)
+    const isMonthly = billing === "monthly";
+    const recurring = {
+      subscription_type: 1,
+      recurring_amount: amount,      // Amount debited for each cycle
+      frequency: isMonthly ? 3 : 12, // 3=monthly, 12=annual
+      cycles: 0                      // 0 = continue until cancelled
+    };
 
-      return res.status(200).json({
-        ok: true,
-        redirect,
-        // --- diagnostics (visible while we stabilise; remove later) ---
-        diag: {
-          mode: MODE,
-          base: base,              // exact string hashed
-          signature,
-          fields: Object.fromEntries(paramsForSignature.entries())
-        }
-      });
-    } else {
-      // If you don’t have a passphrase set in the PayFast dashboard, you must NOT
-      // append passphrase in the base and you must also disable it in your account.
-      const base = paramsForSignature.toString();
-      const signature = crypto.createHash("md5").update(base, "utf8").digest("hex");
+    const fields = {
+      merchant_id: MERCHANT_ID,
+      merchant_key: MERCHANT_KEY,
+      return_url: RETURN_URL,
+      cancel_url: CANCEL_URL,
+      notify_url: NOTIFY_URL,
+      amount: amount,                // upfront charge
+      item_name,
+      ...(recurring)
+    };
 
-      const engine = MODE === "live"
-        ? "https://www.payfast.co.za/eng/process"
-        : "https://sandbox.payfast.co.za/eng/process";
+    const { signature, base } = buildSignature(fields, PASSPHRASE);
+    fields.signature = signature;
 
-      const qs = new URLSearchParams(paramsForSignature);
-      qs.append("signature", signature);
+    // Optional debug (don’t expose passphrase)
+    const debug = req.query?.debug
+      ? { mode: MODE, signature_base: base, signature, fields }
+      : undefined;
 
-      return res.status(200).json({
-        ok: true,
-        redirect: `${engine}?${qs.toString()}`,
-        diag: { mode: MODE, base, signature, fields: Object.fromEntries(paramsForSignature.entries()) }
-      });
-    }
+    return res.status(200).json({ ok: true, engine, fields, ...(debug ? { debug } : {}) });
   } catch (err) {
-    return res.status(500).json({ ok: false, error: err?.message || "Server error" });
+    return res.status(500).json({ ok: false, error: err.message || String(err) });
   }
 }
