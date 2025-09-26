@@ -30,12 +30,13 @@ function sanitizePF(text) {
   return t;
 }
 
-/** Build signature from the EXACT fields we will post */
-function buildSignature(fields, passphrase) {
+/** Build signature from the EXACT fields we will post; also return the base string used for hashing */
+function buildSignatureAndBase(fields, passphrase) {
   const keys = Object.keys(fields).sort();
   const query = keys.map(k => `${k}=${encodeRFC3986(String(fields[k] ?? ""))}`).join("&");
   const withPass = passphrase ? `${query}&passphrase=${encodeRFC3986(passphrase)}` : query;
-  return crypto.createHash("md5").update(withPass).digest("hex");
+  const signature = crypto.createHash("md5").update(withPass).digest("hex");
+  return { signature, base: withPass };
 }
 
 function pfEndpoint(mode) {
@@ -52,7 +53,7 @@ export default async function handler(req, res) {
 
     const {
       plan = "basic",            // "basic" | "standard"
-      billing = "monthly",       // "monthly" | "annual"  (we’ll still submit monthly flags for now)
+      billing = "monthly",       // "monthly" | "annual"
       amount = 0,
       signupId = "",
       name = "",
@@ -74,7 +75,7 @@ export default async function handler(req, res) {
     const missing = [];
     if (!merchant_id) missing.push("PAYFAST_MERCHANT_ID");
     if (!merchant_key) missing.push("PAYFAST_MERCHANT_KEY");
-    if (!passphrase)  missing.push("PAYFAST_PASSPHRASE");
+    // You may have passphrase toggle OFF in PayFast; if so, leave PAYFAST_PASSPHRASE empty here and in portal.
     if (!return_url)  missing.push("PAYFAST_RETURN_URL");
     if (!cancel_url)  missing.push("PAYFAST_CANCEL_URL");
     if (!notify_url)  missing.push("PAYFAST_NOTIFY_URL");
@@ -93,7 +94,7 @@ export default async function handler(req, res) {
     const frequency = 3; // monthly
     const cycles = 0;    // 0 = indefinite (if allowed)
 
-    // IMPORTANT: keep names/descriptions ASCII only for consistent signing on PayFast side
+    // ASCII-only names to avoid signature drift on PayFast side
     const item_name =
       billing === "monthly"
         ? (plan === "standard"
@@ -105,6 +106,7 @@ export default async function handler(req, res) {
 
     const item_description = "Community live-view access with night notifications (customisable hours).";
 
+    // Build EXACT field set we will post
     const fields = {
       merchant_id,
       merchant_key,
@@ -114,9 +116,9 @@ export default async function handler(req, res) {
       amount: cents,
       item_name: sanitizePF(item_name),
       item_description: sanitizePF(item_description),
-      email_address: email || undefined,
-      name_first: sanitizePF(name ? name.split(" ")[0] : ""),
-      name_last:  sanitizePF(name ? name.split(" ").slice(1).join(" ") : ""),
+      email_address: email ? sanitizePF(email) : undefined,
+      name_first: name ? sanitizePF(name.split(" ")[0]) : undefined,
+      name_last:  name ? sanitizePF(name.split(" ").slice(1).join(" ")) : undefined,
       custom_str1: signupId || "",
       custom_str2: plan,
       custom_str3: billing,
@@ -130,11 +132,13 @@ export default async function handler(req, res) {
     // Remove undefined so we only sign/post what exists
     Object.keys(fields).forEach(k => fields[k] === undefined && delete fields[k]);
 
-    const signature = buildSignature(fields, passphrase);
+    const { signature, base: signature_base } = buildSignatureAndBase(fields, passphrase);
     fields.signature = signature;
 
-    // Respond with endpoint + EXACT fields for the client to post (form posts the same object we signed)
-    return res.status(200).json({ ok: true, action: pfEndpoint(mode), fields });
+    // Include the base only in sandbox so you can compare if needed
+    const debug = mode === "sandbox" ? { debug_signature_base: signature_base } : {};
+
+    return res.status(200).json({ ok: true, action: pfEndpoint(mode), fields, ...debug });
   } catch (e) {
     console.error("payfast-initiate fatal error", e);
     return res.status(500).json({ ok: false, error: "Server error" });

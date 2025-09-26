@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, Link } from "react-router-dom";
-import { CreditCard, Shield, Loader2, Bug } from "lucide-react";
+import { CreditCard, Shield, Loader2, Bug, ChevronDown, ChevronUp } from "lucide-react";
 
 export default function Pay() {
   const { search } = useLocation();
@@ -16,6 +16,7 @@ export default function Pay() {
   const [error, setError] = useState("");
   const [missing, setMissing] = useState(null);
   const [diag, setDiag] = useState(null);
+  const [showDbg, setShowDbg] = useState(false);
 
   async function createCheckout() {
     setBusy(true); setError(""); setMissing(null);
@@ -54,10 +55,7 @@ export default function Pay() {
     }
   }
 
-  useEffect(() => {
-    createCheckout();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  useEffect(() => { createCheckout(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-10">
@@ -107,9 +105,35 @@ export default function Pay() {
           </div>
         ) : null}
 
+        {/* Debug (sandbox): show the exact string we signed and the fields we will post */}
+        {pf?.debug_signature_base ? (
+          <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+            <button
+              className="inline-flex items-center gap-1 font-semibold"
+              onClick={() => setShowDbg(s => !s)}
+              type="button"
+            >
+              {showDbg ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              Sandbox debug: signature base & fields
+            </button>
+            {showDbg ? (
+              <>
+                <p className="mt-2">Signature base (the exact string we md5-hash):</p>
+                <pre className="mt-1 max-h-40 overflow-auto rounded bg-white p-2 ring-1 ring-amber-200">
+                  {pf.debug_signature_base}
+                </pre>
+                <p className="mt-3">Fields we post:</p>
+                <pre className="mt-1 max-h-60 overflow-auto rounded bg-white p-2 ring-1 ring-amber-200">
+                  {JSON.stringify(pf.fields, null, 2)}
+                </pre>
+              </>
+            ) : null}
+          </div>
+        ) : null}
+
         <div className="mt-5 flex flex-wrap items-center gap-3">
           {pf ? (
-            <form action={pf.action} method="post">
+            <form action={pf.action} method="post" acceptCharset="UTF-8">
               {Object.entries(pf.fields).map(([k, v]) => (
                 <input key={k} type="hidden" name={k} value={String(v)} />
               ))}
