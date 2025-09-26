@@ -1,82 +1,85 @@
 // src/routes/pay.jsx
 import React, { useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+import { Shield, AlertCircle, CreditCard, ChevronRight } from "lucide-react";
 
 export default function Pay() {
-  const [params] = useSearchParams();
-  const plan = (params.get("plan") || "basic").toLowerCase(); // basic | plus
-  const billing = (params.get("billing") || "monthly").toLowerCase(); // monthly | annual
-  const amount = useMemo(() => {
-    if (billing === "annual") {
-      return plan === "plus" ? 1299 : 1099;
-    }
-    return plan === "plus" ? 149 : 99;
-  }, [plan, billing]);
-
-  const [busy, setBusy] = useState(false);
+  const [sp] = useSearchParams();
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [diag, setDiag] = useState(null);
 
-  async function requestPayfast(showDiagnostics = false) {
-    setBusy(true);
+  const plan = sp.get("plan") || "basic";        // 'basic' | 'plus'
+  const billing = sp.get("billing") || "monthly";// 'monthly' | 'annual'
+  const amountParam = sp.get("amount");
+  const recurring = sp.get("recurring") === "true" || billing === "monthly";
+
+  const amount = useMemo(() => {
+    if (amountParam) return Number(amountParam);
+    // sensible defaults if not provided
+    if (plan === "basic" && billing === "monthly") return 99;
+    if (plan === "plus"  && billing === "monthly") return 149;
+    if (plan === "basic" && billing === "annual") return 1099;
+    if (plan === "plus"  && billing === "annual") return 1299;
+    return 99;
+  }, [plan, billing, amountParam]);
+
+  const planName = plan === "basic" ? "BASIC" : "PLUS";
+
+  async function onPay() {
+    setSubmitting(true);
     setError("");
     setDiag(null);
+
     try {
       const res = await fetch("/api/payfast-initiate", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "content-type": "application/json" },
         body: JSON.stringify({
           plan,
           billing,
           amount,
-          diagnostics: showDiagnostics ? "true" : "false",
+          recurring,
         }),
       });
 
-      // Network ok?
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || `HTTP ${res.status}`);
-      }
+      const data = await res.json().catch(() => ({}));
 
-      // Parse JSON
-      const data = await res.json();
-
-      // Diagnostics view
-      if (showDiagnostics) {
+      if (!data?.ok) {
+        setError(data?.error || "Server error");
         setDiag(data);
-      }
-
-      if (data && data.ok && data.redirect) {
-        // Redirect to PayFast
-        window.location.href = data.redirect;
+        setSubmitting(false);
         return;
       }
 
-      throw new Error(data?.error || "Unexpected response");
+      // Optional diagnostics visible in sandbox
+      if (data.debug) setDiag(data.debug);
+
+      // Redirect to PayFast
+      window.location.href = data.redirect;
     } catch (e) {
       setError(e?.message || "Failed to fetch");
-    } finally {
-      setBusy(false);
+      setSubmitting(false);
     }
   }
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-10">
       <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h1 className="text-3xl font-bold tracking-tight text-slate-900">
-          Payment
-        </h1>
-        <p className="mt-2 text-slate-600">
-          You’re subscribing to{" "}
-          <span className="font-semibold uppercase">{plan}</span> (
-          {billing}) —{" "}
-          <span className="font-semibold">R{amount}</span>.
+        <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200">
+          <Shield className="h-4 w-4" />
+          Ghosthome — Payment
+        </div>
+
+        <h1 className="text-3xl font-bold tracking-tight text-slate-900">Payment</h1>
+        <p className="mt-1 text-slate-600">
+          You’re subscribing to <strong className="text-slate-900">{planName}</strong>{" "}
+          ({billing}) — <strong className="text-slate-900">R{amount}</strong>.
         </p>
 
-        <div className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-900">
-          <p className="font-semibold">Subscription: billed {billing} until you cancel.</p>
-          <ul className="mt-2 list-disc pl-5 text-sm">
+        <div className="mt-4 rounded-xl bg-emerald-50 p-4 ring-1 ring-emerald-200">
+          <p className="text-sm font-semibold text-emerald-900">Subscription: billed monthly until you cancel.</p>
+          <ul className="mt-2 list-disc pl-6 text-sm text-emerald-900/90">
             <li>Plan: {plan}</li>
             <li>Billing: {billing}</li>
             <li>Amount: R{amount}</li>
@@ -84,47 +87,46 @@ export default function Pay() {
         </div>
 
         {error && (
-          <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-900">
-            <p className="font-semibold">Server error</p>
-            <p className="text-sm">{error}</p>
+          <div className="mt-4 rounded-xl bg-rose-50 p-4 ring-1 ring-rose-200">
+            <div className="flex items-center gap-2 text-rose-800">
+              <AlertCircle className="h-4 w-4" />
+              <span className="font-semibold">Server error</span>
+            </div>
+            <p className="mt-1 text-sm text-rose-800">{error}</p>
+            {diag && (
+              <details className="mt-2">
+                <summary className="cursor-pointer text-xs font-semibold text-rose-700">
+                  Run diagnostics
+                </summary>
+                <pre className="mt-2 max-h-60 overflow-auto rounded bg-white p-3 text-xs text-slate-800 ring-1 ring-slate-200">
+                  {JSON.stringify(diag, null, 2)}
+                </pre>
+              </details>
+            )}
           </div>
         )}
 
-        {diag && (
-          <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900">
-            <p className="font-semibold">Diagnostics</p>
-            <pre className="mt-2 max-h-72 overflow-auto rounded-lg bg-white p-3 text-xs text-slate-800 ring-1 ring-slate-200">
-{JSON.stringify(diag, null, 2)}
-            </pre>
-          </div>
-        )}
+        <div className="mt-6 flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={onPay}
+            disabled={submitting}
+            className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
+          >
+            <CreditCard className="h-5 w-5" />
+            {submitting ? "Redirecting…" : "Pay with PayFast"}
+          </button>
 
-        <div className="mt-6 flex flex-wrap gap-3">
-          <button
-            disabled={busy}
-            onClick={() => requestPayfast(false)}
-            className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-white hover:bg-slate-800 disabled:opacity-50"
-          >
-            {busy ? "Contacting PayFast…" : "Pay with PayFast"}
-          </button>
-          <button
-            disabled={busy}
-            onClick={() => requestPayfast(true)}
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-          >
-            Run diagnostics
-          </button>
           <Link
             to="/street"
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-slate-700 hover:bg-slate-50"
+            className="inline-flex items-center gap-1 rounded-xl border border-slate-300 bg-white px-3 py-2 text-slate-700 hover:bg-slate-50"
           >
-            Back to Street page
+            Back to Street page <ChevronRight className="h-4 w-4" />
           </Link>
         </div>
 
-        <p className="mt-6 text-xs text-slate-500">
-          Your card is processed by PayFast. We receive secure notifications (ITN) to
-          activate your access automatically.
+        <p className="mt-4 text-xs text-slate-500">
+          Your card is processed by PayFast. We receive secure notifications (ITN) to activate your access automatically.
         </p>
       </div>
     </main>
