@@ -1,160 +1,132 @@
-// /api/payfast-initiate.js
-// PayFast signature exactly per docs:
-// - Sort keys alphabetically
-// - URL-encode values (spaces -> '+', upper-case hex)
-// - Append &passphrase=<urlencoded> if (and only if) you have set a passphrase in your PayFast Dashboard
-// - MD5 of that final string
-// Then POST those exact fields to the correct engine (sandbox/live) via an auto-submit form.
+// Node.js (Vercel Serverless Function)
+// Full file — paste as-is.
 
 import crypto from "crypto";
 
-// ---- HARD SETTINGS (keep it dead simple) ----
-const USE_SUBSCRIPTIONS = true; // true = subscription billing, false = once-off
-
-// PHP-style urlencode (spaces -> '+', upper-case hex)
-const urlencode = (v) =>
-  encodeURIComponent(String(v))
-    .replace(/%20/g, "+")
-    .replace(/[!'()*]/g, (c) => "%" + c.charCodeAt(0).toString(16).toUpperCase());
-
-// Alphabetically sort & remove empties and signature
-function normalize(fields) {
-  const out = {};
-  Object.keys(fields)
-    .filter((k) => k !== "signature" && fields[k] !== undefined && fields[k] !== null && String(fields[k]) !== "")
-    .sort()
-    .forEach((k) => (out[k] = String(fields[k])));
-  return out;
+/** PHP urlencode equivalent (space -> '+', plus -> %2B, etc.) */
+function phpUrlEncode(str = "") {
+  return encodeURIComponent(String(str))
+    .replace(/!/g, "%21")
+    .replace(/\*/g, "%2A")
+    .replace(/\(/g, "%28")
+    .replace(/\)/g, "%29")
+    .replace(/'/g, "%27")
+    .replace(/%20/g, "+");
 }
 
-function md5(s) {
-  return crypto.createHash("md5").update(s, "utf8").digest("hex");
-}
-
+/** Build MD5 signature exactly like PayFast PHP sample */
 function buildSignature(fields, passphrase) {
-  const f = normalize(fields);
-  const base =
-    Object.keys(f)
-      .map((k) => `${k}=${urlencode(f[k])}`)
-      .join("&") + (passphrase ? `&passphrase=${urlencode(passphrase)}` : "");
-  return { base, signature: md5(base) };
+  // 1) Remove empty values & the signature itself
+  const filtered = Object.entries(fields)
+    .filter(([k, v]) => k !== "signature" && v !== undefined && v !== null && String(v) !== "");
+
+  // 2) Sort alphabetically by parameter name
+  filtered.sort(([a], [b]) => a.localeCompare(b));
+
+  // 3) Build the "key=urlencoded(value)" pairs with '&'
+  const base = filtered.map(([k, v]) => `${k}=${phpUrlEncode(String(v))}`).join("&");
+
+  // 4) Append passphrase if present
+  const baseWithPass = passphrase ? `${base}&passphrase=${phpUrlEncode(passphrase)}` : base;
+
+  // 5) MD5 lowercase
+  const signature = crypto.createHash("md5").update(baseWithPass, "utf8").digest("hex");
+  return { base, baseWithPass, signature };
 }
 
-export default async function handler(req, res) {
-  try {
-    const url = new URL(req.url, `http://${req.headers.host}`);
-    const plan = (url.searchParams.get("plan") || "basic").toLowerCase();     // basic | plus
-    const term = (url.searchParams.get("term") || "monthly").toLowerCase();   // monthly | yearly
-    const debug = url.searchParams.get("debug") === "1";
+/** Minimal, boring, by-the-docs field set for a subscription */
+function buildFields() {
+  const {
+    PAYFAST_MODE = "sandbox",
+    PAYFAST_MERCHANT_ID,
+    PAYFAST_MERCHANT_KEY,
+    PAYFAST_RETURN_URL,
+    PAYFAST_CANCEL_URL,
+    PAYFAST_NOTIFY_URL,
+    PAYFAST_PASSPHRASE,
+  } = process.env;
 
-    // ---- ENV (MUST match your PayFast Dashboard) ----
-    const MODE = (process.env.PAYFAST_MODE || "sandbox").toLowerCase(); // "sandbox" or "live"
-    const MERCHANT_ID = (process.env.PAYFAST_MERCHANT_ID || "").trim();
-    const MERCHANT_KEY = (process.env.PAYFAST_MERCHANT_KEY || "").trim();
-    const PASSPHRASE = (process.env.PAYFAST_PASSPHRASE || "").trim(); // leave EMPTY here if no passphrase set in PF Dashboard
-    const RETURN_URL = (process.env.PAYFAST_RETURN_URL || "").trim(); // e.g. https://ghosthome.co.za/pay?result=success
-    const CANCEL_URL = (process.env.PAYFAST_CANCEL_URL || "").trim(); // e.g. https://ghosthome.co.za/pay?result=cancel
-    const NOTIFY_URL = (process.env.PAYFAST_NOTIFY_URL || "").trim(); // e.g. https://ghosthome.co.za/api/payfast-itn
-
-    const missing = [];
-    if (!MERCHANT_ID) missing.push("PAYFAST_MERCHANT_ID");
-    if (!MERCHANT_KEY) missing.push("PAYFAST_MERCHANT_KEY");
-    if (!RETURN_URL) missing.push("PAYFAST_RETURN_URL");
-    if (!CANCEL_URL) missing.push("PAYFAST_CANCEL_URL");
-    if (!NOTIFY_URL) missing.push("PAYFAST_NOTIFY_URL");
-    if (missing.length) {
-      res.status(500).json({ ok: false, error: "Missing environment variables", missing });
-      return;
-    }
-
-    // ---- Simple plans (exactly what you’re selling) ----
-    let amount = 99.0;
-    let itemName = "Ghosthome Street Access - 2 cams / 1 account - Monthly";
-    if (plan === "basic" && term === "yearly") {
-      amount = 1099.0;
-      itemName = "Ghosthome Street Access - 2 cams / 1 account - 12 months";
-    }
-    if (plan === "plus" && term === "monthly") {
-      amount = 149.0;
-      itemName = "Ghosthome Street Access - 4 cams / 2 accounts - Monthly";
-    }
-    if (plan === "plus" && term === "yearly") {
-      amount = 1299.0;
-      itemName = "Ghosthome Street Access - 4 cams / 2 accounts - 12 months";
-    }
-    const amt = amount.toFixed(2);
-
-    const engine =
-      MODE === "live"
-        ? "https://www.payfast.co.za/eng/process"
-        : "https://sandbox.payfast.co.za/eng/process";
-
-    // ---- Minimal fields only (the fewer fields, the fewer signature traps) ----
-    let fields;
-    if (!USE_SUBSCRIPTIONS) {
-      // Once-off
-      fields = {
-        merchant_id: MERCHANT_ID,
-        merchant_key: MERCHANT_KEY,
-        return_url: RETURN_URL,
-        cancel_url: CANCEL_URL,
-        notify_url: NOTIFY_URL,
-        amount: amt,
-        item_name: itemName
-      };
-    } else {
-      // Subscription (monthly or yearly)
-      const frequency = term === "yearly" ? 7 : 3; // PayFast: 3=monthly, 7=annual (per API docs)
-      fields = {
-        merchant_id: MERCHANT_ID,
-        merchant_key: MERCHANT_KEY,
-        return_url: RETURN_URL,
-        cancel_url: CANCEL_URL,
-        notify_url: NOTIFY_URL,
-        amount: amt,           // initial amount (charged on setup)
-        item_name: itemName,
-        subscription_type: 1,  // 1 = subscription
-        recurring_amount: amt, // subsequent cycles
-        frequency,             // 3 monthly, 7 annually
-        cycles: 0              // 0 = indefinite
-      };
-    }
-
-    // ---- Signature from URL-ENCODED values (doc style) ----
-    const { base, signature } = buildSignature(fields, PASSPHRASE);
-
-    if (debug) {
-      res.status(200).json({
-        ok: true,
-        mode: MODE,
-        passphrase_len: PASSPHRASE.length,
-        passphrase_last2: PASSPHRASE.slice(-2),
-        signature_base: base,
-        signature,
-        fields: { ...fields, signature }
-      });
-      return;
-    }
-
-    // ---- Auto-submit POST to PayFast using EXACT same fields used in signature ----
-    const inputs = Object.entries({ ...fields, signature })
-      .map(
-        ([k, v]) =>
-          `<input type="hidden" name="${k}" value="${String(v).replace(/"/g, "&quot;")}">`
-      )
-      .join("\n");
-
-    res.setHeader("Content-Type", "text/html; charset=utf-8");
-    res.status(200).end(`<!doctype html>
-<html><head><meta charset="utf-8"><title>Redirecting…</title></head>
-<body onload="document.forms[0].submit()" style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif">
-  <p style="padding:16px">Redirecting to PayFast…</p>
-  <form action="${engine}" method="post">
-${inputs}
-    <noscript><button type="submit">Continue</button></noscript>
-  </form>
-</body></html>`);
-  } catch (e) {
-    res.status(500).json({ ok: false, error: e?.message || "Server error" });
+  if (!PAYFAST_MERCHANT_ID || !PAYFAST_MERCHANT_KEY || !PAYFAST_RETURN_URL ||
+      !PAYFAST_CANCEL_URL || !PAYFAST_NOTIFY_URL) {
+    return { error: "Missing PayFast env vars." };
   }
+
+  // Keep it dead simple: BASIC plan @ R99 monthly.
+  const fields = {
+    merchant_id: PAYFAST_MERCHANT_ID,
+    merchant_key: PAYFAST_MERCHANT_KEY,
+    return_url: PAYFAST_RETURN_URL,
+    cancel_url: PAYFAST_CANCEL_URL,
+    notify_url: PAYFAST_NOTIFY_URL,
+
+    amount: "99.00",
+    item_name: "Ghosthome Street Access - 2 cams / 1 account - Monthly",
+
+    // Recurring billing
+    subscription_type: 1,     // 1 = subscription
+    recurring_amount: "99.00",
+    frequency: 3,             // 3 = monthly
+    cycles: 0,                // 0 = indefinite
+  };
+
+  // Choose engine by mode
+  const engine =
+    PAYFAST_MODE === "live"
+      ? "https://www.payfast.co.za/eng/process"
+      : "https://sandbox.payfast.co.za/eng/process";
+
+  const sig = buildSignature(fields, PAYFAST_PASSPHRASE);
+
+  // Add signature to the *sent* fields
+  const sending = { ...fields, signature: sig.signature };
+
+  return { mode: PAYFAST_MODE, engine, fields, sending, sig };
+}
+
+/** Vercel API handler */
+export default async function handler(req, res) {
+  // Allow GET for diagnostics, POST for normal flow
+  if (req.method !== "GET" && req.method !== "POST") {
+    res.status(405).json({ ok: false, error: "Method not allowed" });
+    return;
+  }
+
+  const built = buildFields();
+  if (built.error) {
+    res.status(500).json({ ok: false, error: built.error });
+    return;
+  }
+
+  const { mode, engine, sending, sig } = built;
+
+  // If you hit this endpoint as GET with ?diagnostics=1 we show the full bases/signature
+  const wantDiag =
+    req.method === "GET" &&
+    (req.query.diagnostics === "1" || req.query.diag === "1" || req.query.debug === "1");
+
+  if (wantDiag) {
+    res.status(200).json({
+      ok: true,
+      mode,
+      engine,
+      // What we sign on (alphabetically sorted, URL-encoded values)
+      signature_base: sig.base,
+      signature_base_with_passphrase: sig.baseWithPass,
+      signature: sig.signature,
+      // What we actually send to PayFast (includes signature, *no* passphrase)
+      sending_fields: sending,
+    });
+    return;
+  }
+
+  // Build redirect URL to the PayFast engine
+  // IMPORTANT: preserve our own encoding — do not let URLSearchParams change ordering/encoding.
+  const query = Object.entries(sending)
+    .map(([k, v]) => `${k}=${phpUrlEncode(String(v))}`)
+    .join("&");
+
+  const redirectUrl = `${engine}?${query}`;
+
+  // For frontend fetch, return JSON with URL (the page then window.location = url)
+  res.status(200).json({ ok: true, redirect: redirectUrl });
 }
