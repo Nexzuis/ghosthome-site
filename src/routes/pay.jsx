@@ -21,7 +21,8 @@ export default function Pay() {
   async function createCheckout() {
     setBusy(true); setError(""); setMissing(null);
     try {
-      const res = await fetch("/api/payfast-initiate", {
+      // NOTE: alias path that won’t be blocked by extensions
+      const res = await fetch("/api/pf-init", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ plan, billing, amount, signupId }),
@@ -29,7 +30,7 @@ export default function Pay() {
 
       const text = await res.text();
       let data = null;
-      try { data = JSON.parse(text); } catch { /* keep text for debugging */ }
+      try { data = JSON.parse(text); } catch { /* keep raw text if needed */ }
 
       if (!res.ok || !data?.ok) {
         const msg = data?.error || `HTTP ${res.status}`;
@@ -105,7 +106,6 @@ export default function Pay() {
           </div>
         ) : null}
 
-        {/* Debug (sandbox): show the exact string we signed and the fields we will post */}
         {pf?.debug_signature_base ? (
           <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
             <button
@@ -118,11 +118,11 @@ export default function Pay() {
             </button>
             {showDbg ? (
               <>
-                <p className="mt-2">Signature base (the exact string we md5-hash):</p>
+                <p className="mt-2">Signature base:</p>
                 <pre className="mt-1 max-h-40 overflow-auto rounded bg-white p-2 ring-1 ring-amber-200">
                   {pf.debug_signature_base}
                 </pre>
-                <p className="mt-3">Fields we post:</p>
+                <p className="mt-3">Fields:</p>
                 <pre className="mt-1 max-h-60 overflow-auto rounded bg-white p-2 ring-1 ring-amber-200">
                   {JSON.stringify(pf.fields, null, 2)}
                 </pre>
