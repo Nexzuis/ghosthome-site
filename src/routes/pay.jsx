@@ -1,115 +1,117 @@
-import React, { useMemo, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+// /src/routes/pay.jsx
+import { useEffect, useMemo, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+
+const tidy = (v) => (typeof v === "string" ? v.trim() : v);
 
 export default function Pay() {
-  const [sp] = useSearchParams();
-  const plan = (sp.get("plan") || "basic").toLowerCase();     // 'basic' | 'plus'
-  const billing = (sp.get("billing") || "monthly").toLowerCase(); // 'monthly' | 'annual'
-  const amountParam = sp.get("amount");
+  const location = useLocation();
+  const navigate = useNavigate();
+  const qs = useMemo(() => new URLSearchParams(location.search), [location.search]);
 
-  const amount = useMemo(() => {
-    if (amountParam) return Number(amountParam);
-    if (plan === "basic" && billing === "monthly") return 99;
-    if (plan === "plus"  && billing === "monthly") return 149;
-    if (plan === "basic" && billing === "annual")  return 1099;
-    if (plan === "plus"  && billing === "annual")  return 1299;
-    return 99;
-  }, [plan, billing, amountParam]);
+  // from /signup redirect
+  const plan = tidy(qs.get("plan")) || "basic";
+  const billing = tidy(qs.get("billing")) || "monthly";
+  const recurring = qs.get("recurring") === "true"; // not used now but kept
+  const amount = tidy(qs.get("amount")) || (plan === "basic" ? "99.00" : "149.00");
 
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
+  const [err, setErr] = useState("");
   const [diag, setDiag] = useState(null);
+  const [busy, setBusy] = useState(false);
 
-  async function onPay() {
+  const planLine =
+    plan === "basic"
+      ? "Ghosthome Street Access — 2 cams / 1 account"
+      : "Ghosthome Street Access — 4 cams / 2 accounts";
+
+  const onPay = async (withDiagnostics = false) => {
+    setErr("");
     setBusy(true);
-    setError("");
     setDiag(null);
     try {
-      const res = await fetch("/api/payfast-initiate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          plan,
-          billing,
-          amount,
-          recurring: billing === "monthly",
-        }),
-      });
+      const url = new URL("/api/payfast-initiate", window.location.origin);
+      url.searchParams.set("plan", plan);
+      url.searchParams.set("billing", billing);
+      url.searchParams.set("amount", amount);
+      if (withDiagnostics) url.searchParams.set("diagnostics", "true");
 
-      const text = await res.text();
-      let data = null;
-      try { data = JSON.parse(text); } catch {
-        throw new Error(`Server returned non-JSON (${res.status})`);
-      }
+      const r = await fetch(url.toString(), { method: "GET" });
+      const data = await r.json();
 
-      if (!res.ok || !data?.ok || !data?.redirect) {
-        setError(data?.error || `HTTP ${res.status}`);
-        setDiag(data || null);
-        setBusy(false);
+      if (!data?.ok) {
+        setErr(data?.error || "Server error");
         return;
       }
-
-      if (data.debug) setDiag(data.debug);
-      window.location.href = data.redirect; // to PayFast
+      if (withDiagnostics) setDiag(data);
+      window.location.href = data.redirect;
     } catch (e) {
-      setError(e.message || "Failed to start payment");
+      setErr(e?.message || "Failed to connect");
+    } finally {
       setBusy(false);
     }
-  }
+  };
+
+  useEffect(() => {
+    // no auto-redirect; user clicks the button
+  }, []);
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-10">
-      <h1 className="text-3xl font-bold text-slate-900">Payment</h1>
+    <div className="mx-auto max-w-3xl px-4 py-10">
+      <h1 className="text-3xl font-semibold">Payment</h1>
       <p className="mt-1 text-slate-600">
-        You’re subscribing to <span className="font-semibold uppercase">{plan}</span>{" "}
-        ({billing}) — <span className="font-semibold">R{amount}</span>.
+        You’re subscribing to <span className="font-bold">{plan.toUpperCase()}</span>{" "}
+        (monthly) — <span className="font-bold">R{Number(amount).toFixed(0)}</span>.
       </p>
 
-      <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
-          <span className="font-semibold">Subscription:</span>{" "}
-          {billing === "monthly" ? "billed monthly until you cancel." : "12 months once-off."}
-        </div>
-
-        <ul className="mt-3 list-disc pl-5 text-slate-700">
+      <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-4">
+        <p className="rounded-lg bg-emerald-50 px-3 py-2 text-emerald-700">
+          Subscription: billed monthly until you cancel.
+        </p>
+        <ul className="mt-3 list-disc space-y-1 pl-5 text-slate-700">
           <li>Plan: {plan}</li>
           <li>Billing: {billing}</li>
-          <li>Amount: R{amount}</li>
+          <li>Amount: R{Number(amount).toFixed(0)}</li>
         </ul>
 
-        {error ? (
-          <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-rose-700">
-            <div className="font-semibold">Server error</div>
-            <div className="text-xs">{error}</div>
-            {diag ? (
-              <pre className="mt-2 max-h-72 overflow-auto rounded bg-white p-2 text-xs ring-1 ring-slate-200">
-                {JSON.stringify(diag, null, 2)}
+        {err && (
+          <div className="mt-4 whitespace-pre-wrap rounded-lg border border-rose-200 bg-rose-50 p-3 text-rose-700">
+            <p className="font-medium">Server error</p>
+            <p className="text-sm">{err}</p>
+            {diag && (
+              <pre className="mt-3 max-h-60 overflow-auto rounded bg-white p-2 text-xs text-slate-800">
+{JSON.stringify(diag, null, 2)}
               </pre>
-            ) : null}
+            )}
+            <button
+              onClick={() => onPay(true)}
+              className="mt-3 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm hover:bg-slate-100"
+            >
+              Run diagnostics
+            </button>
           </div>
-        ) : null}
+        )}
 
-        <div className="mt-5 flex flex-wrap gap-3">
+        <div className="mt-5 flex items-center gap-3">
           <button
-            type="button"
-            onClick={onPay}
+            onClick={() => onPay(false)}
             disabled={busy}
-            className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
+            className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-2.5 font-medium text-white hover:bg-slate-800 disabled:opacity-50"
           >
-            {busy ? "Connecting…" : "Pay with PayFast"}
+            {busy ? "Please wait…" : "Pay with PayFast"}
           </button>
           <Link
             to="/street"
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-slate-700 hover:bg-slate-50"
+            className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 font-medium text-slate-700 hover:bg-slate-50"
           >
             Back to Street page
           </Link>
         </div>
 
-        <p className="mt-3 text-xs text-slate-500">
-          Your card is processed by PayFast. We receive secure notifications (ITN) to activate your access automatically.
+        <p className="mt-4 text-xs text-slate-500">
+          Your card is processed by PayFast. We receive secure notifications (ITN) to
+          activate your access automatically.
         </p>
       </div>
-    </main>
+    </div>
   );
 }

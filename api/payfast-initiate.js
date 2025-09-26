@@ -1,100 +1,140 @@
-// api/payfast-initiate.js
-const crypto = require("crypto");
+// /api/payfast-initiate.js
+// Vercel serverless function – creates a PayFast redirect URL for subscriptions
 
-const required = (key, value) => {
-  if (!value) throw new Error(`Missing env: ${key}`);
-  return value;
-};
+import crypto from "crypto";
 
-const asMoney = (n) =>
-  (typeof n === "number" ? n : parseFloat(String(n || "0")))
-    .toFixed(2);
-
-function buildSignature(fields, passphrase) {
-  // PayFast requires: sort by key (case-insensitive ascending), skip empty values
-  const pairs = Object.keys(fields)
-    .filter((k) => fields[k] !== undefined && fields[k] !== null && fields[k] !== "")
-    .sort((a, b) => a.localeCompare(b))
-    .map((k) => `${k}=${encodeURIComponent(String(fields[k]).trim())}`);
-
-  if (passphrase) {
-    pairs.push(`passphrase=${encodeURIComponent(passphrase.trim())}`);
-  }
-  const base = pairs.join("&");
-  const md5 = crypto.createHash("md5").update(base).digest("hex");
-  return { base, md5 };
+/** Encode exactly like PayFast expects (PHP rawurlencode: spaces => %20, not +) */
+function pfEncode(v) {
+  return encodeURIComponent(String(v)).replace(/%20/g, "%20");
 }
 
-module.exports = async (req, res) => {
+/** Build query string with rawurlencode (spaces => %20) */
+function toQuery(fields) {
+  return Object.entries(fields)
+    .map(([k, v]) => `${k}=${pfEncode(v)}`)
+    .join("&");
+}
+
+/** Create PayFast signature:
+ *  1) remove empty/undefined/null values
+ *  2) sort by key ASC
+ *  3) rawurlencode values (spaces => %20)
+ *  4) append &passphrase=<encoded passphrase>
+ *  5) md5 hex lower
+ */
+function createSignature(fields, passphrase) {
+  const filtered = Object.fromEntries(
+    Object.entries(fields).filter(([, v]) => v !== undefined && v !== null && v !== "")
+  );
+
+  const sorted = Object.keys(filtered)
+    .sort()
+    .reduce((acc, k) => ((acc[k] = filtered[k]), acc), {});
+
+  let base = Object.entries(sorted)
+    .map(([k, v]) => `${k}=${pfEncode(v)}`)
+    .join("&");
+
+  if (passphrase && String(passphrase).length > 0) {
+    base += `&passphrase=${pfEncode(passphrase)}`;
+  }
+
+  return {
+    base,
+    signature: crypto.createHash("md5").update(base).digest("hex"),
+  };
+}
+
+function required(name, value) {
+  if (!value) throw new Error(`Missing ${name}`);
+  return value;
+}
+
+export default async function handler(req, res) {
   try {
-    if (req.method !== "POST") {
-      res.status(405).json({ ok: false, error: "Method not allowed" });
-      return;
+    if (req.method !== "GET" && req.method !== "POST") {
+      return res.status(405).json({ ok: false, error: "Method not allowed" });
     }
 
-    // ==== ENV ====
-    const MODE = process.env.PAYFAST_MODE || "sandbox"; // "sandbox" | "live"
-    const merchant_id = required("PAYFAST_MERCHANT_ID", process.env.PAYFAST_MERCHANT_ID);
-    const merchant_key = required("PAYFAST_MERCHANT_KEY", process.env.PAYFAST_MERCHANT_KEY);
-    const passphrase = process.env.PAYFAST_PASSPHRASE || "";
-    const return_url = required("PAYFAST_RETURN_URL", process.env.PAYFAST_RETURN_URL);
-    const cancel_url = required("PAYFAST_CANCEL_URL", process.env.PAYFAST_CANCEL_URL);
-    const notify_url = required("PAYFAST_NOTIFY_URL", process.env.PAYFAST_NOTIFY_URL);
+    const params =
+      req.method === "POST" ? req.body ?? {} : Object.fromEntries(new URL(req.url, `http://${req.headers.host}`).searchParams);
 
-    const endpoint =
+    // Inputs from the client (already validated on the UI, validate again here)
+    const amount = required("amount", params.amount);       // "99.00" or "129.00"
+    const plan = required("plan", params.plan);             // "basic" | "plus"
+    const billing = required("billing", params.billing);    // "monthly" | "annual"
+
+    // Environment
+    const MODE = process.env.PAYFAST_MODE || "sandbox";     // "sandbox" | "live"
+    const MERCHANT_ID = required("PAYFAST_MERCHANT_ID", process.env.PAYFAST_MERCHANT_ID);
+    const MERCHANT_KEY = required("PAYFAST_MERCHANT_KEY", process.env.PAYFAST_MERCHANT_KEY);
+    const PASSPHRASE = required("PAYFAST_PASSPHRASE", process.env.PAYFAST_PASSPHRASE);
+
+    // You can keep using your fixed URLs from env, or compute from host. We'll use env you already set.
+    const RETURN_URL = required("PAYFAST_RETURN_URL", process.env.PAYFAST_RETURN_URL);
+    const CANCEL_URL = required("PAYFAST_CANCEL_URL", process.env.PAYFAST_CANCEL_URL);
+    const NOTIFY_URL = required("PAYFAST_NOTIFY_URL", process.env.PAYFAST_NOTIFY_URL);
+
+    // Recurring: monthly
+    const fields = {
+      merchant_id: MERCHANT_ID,
+      merchant_key: MERCHANT_KEY,
+      return_url: RETURN_URL,
+      cancel_url: CANCEL_URL,
+      notify_url: NOTIFY_URL,
+
+      // Amount for initial payment page (PayFast still wants amount)
+      amount: Number(amount).toFixed(2),
+
+      // Display
+      item_name:
+        plan === "basic"
+          ? "Ghosthome Street Access - 2 cams / 1 account - Monthly"
+          : "Ghosthome Street Access - 4 cams / 2 accounts - Monthly",
+      item_description:
+        "Community live-view access with night notifications (customisable hours).",
+
+      // Metadata for your ITN handler
+      // (do not include empty strings in signature base)
+      custom_str2: plan,
+      custom_str3: billing,
+
+      // Subscription options
+      subscription_type: 1,                           // 1 = subscription
+      recurring_amount: Number(amount).toFixed(2),    // matches amount
+      frequency: 3,                                   // 3 = monthly
+      cycles: 0,                                      // 0 = indefinite
+    };
+
+    const { base, signature } = createSignature(fields, PASSPHRASE);
+    const pfBaseUrl =
       MODE === "live"
         ? "https://www.payfast.co.za/eng/process"
         : "https://sandbox.payfast.co.za/eng/process";
 
-    // ==== INPUT (from your pay page) ====
-    const { plan, billing, amount, email, name, phone, address } = req.body || {};
-    const amt = asMoney(amount || 0);
+    // Build redirect with the SAME encoding as signature (rawurlencode)
+    const redirectQuery = toQuery({ ...fields, signature });
+    const redirect = `${pfBaseUrl}?${redirectQuery}`;
 
-    // pick labels
-    const isMonthly = (billing || "monthly") === "monthly";
-    const item_name =
-      plan === "plus"
-        ? (isMonthly
-            ? "Ghosthome Street Access - 4 cams / 2 accounts - Monthly"
-            : "Ghosthome Street Access - 4 cams / 2 accounts - Annual")
-        : (isMonthly
-            ? "Ghosthome Street Access - 2 cams / 1 account - Monthly"
-            : "Ghosthome Street Access - 2 cams / 1 account - Annual");
+    // Optional debug for your on-page diagnostics
+    if (params.diagnostics === "true") {
+      return res.status(200).json({
+        ok: true,
+        redirect,
+        debug: {
+          signature_base: base,
+          signature,
+          mode: MODE,
+          fields: { ...fields, signature },
+        },
+      });
+    }
 
-    const item_description =
-      "Community live-view access with night notifications (customisable hours).";
-
-    // Build fields (PayFast)
-    const fields = {
-      merchant_id,
-      merchant_key,
-      return_url,
-      cancel_url,
-      notify_url,
-      amount: amt,                      // initial amount (same as recurring_amount for subs)
-      item_name,
-      item_description,
-      // Identify plan in custom strings (no PII here)
-      custom_str2: plan || "basic",
-      custom_str3: isMonthly ? "monthly" : "annual",
-      // Recurring billing (Subscriptions)
-      subscription_type: 1,             // 1 = subscription
-      recurring_amount: amt,
-      frequency: isMonthly ? 3 : 6,     // 3 = monthly, 6 = bi-annual (closest for “annual” in sandbox); change to 6/12 as you prefer
-      cycles: 0                         // 0 = indefinite
-    };
-
-    const { base, md5 } = buildSignature(fields, passphrase);
-    const redirect = `${endpoint}?${Object.entries(fields)
-      .map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
-      .join("&")}&signature=${md5}`;
-
-    res.status(200).json({
-      ok: true,
-      redirect,
-      debug: process.env.NODE_ENV === "development" ? { signature_base: base, signature: md5, mode: MODE, fields } : undefined
-    });
+    // Normal response used by the /pay page
+    return res.status(200).json({ ok: true, redirect });
   } catch (err) {
-    res.status(500).json({ ok: false, error: err.message || "Server error" });
+    return res
+      .status(500)
+      .json({ ok: false, error: err?.message || "Unexpected server error" });
   }
-};
+}
