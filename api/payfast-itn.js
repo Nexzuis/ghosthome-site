@@ -1,50 +1,65 @@
-// /api/payfast-itn.js
-import crypto from "crypto";
+// api/payfast-itn.js
+const crypto = require("crypto");
 
-/**
- * Minimal ITN endpoint for sandbox: verifies signature & responds 200.
- * You can extend to write into your DB after verification.
- */
-export default async function handler(req, res) {
+function safeVal(v) {
+  return v === undefined || v === null ? "" : String(v);
+}
+
+function buildSignatureFromObject(obj, passphrase) {
+  const filtered = {};
+  for (const [k, v] of Object.entries(obj || {})) {
+    if (k === "signature") continue;
+    const sv = safeVal(v);
+    if (sv !== "") filtered[k] = sv;
+  }
+  const pairs = Object.keys(filtered)
+    .sort()
+    .map((k) => `${k}=${encodeURIComponent(filtered[k]).replace(/%20/g, "+")}`);
+
+  if (passphrase) {
+    pairs.push(
+      `passphrase=${encodeURIComponent(passphrase).replace(/%20/g, "+")}`
+    );
+  }
+
+  const base = pairs.join("&");
+  const signature = crypto.createHash("md5").update(base).digest("hex");
+  return { base, signature };
+}
+
+module.exports = async (req, res) => {
   try {
     if (req.method !== "POST") {
-      return res.status(405).send("Method not allowed");
+      return res.status(405).send("Method Not Allowed");
     }
 
-    // Collect raw form body (Vercel already parses to req.body as object)
-    const payload = req.body || {};
+    const posted =
+      req.body && typeof req.body === "object"
+        ? req.body
+        : JSON.parse(req.body || "{}");
 
-    // Build signature base (exclude signature, include only non-empty)
-    const phpUrlEncode = (val) =>
-      encodeURIComponent(String(val))
-        .replace(/%20/g, "+")
-        .replace(/[!'()*]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`);
+    const { PAYFAST_PASSPHRASE, PAYFAST_MERCHANT_ID } = process.env;
 
-    const passphrase = process.env.PAYFAST_PASSPHRASE || "";
+    // 1) signature check
+    const postedSig = String(posted.signature || "");
+    const { signature } = buildSignatureFromObject(posted, PAYFAST_PASSPHRASE);
 
-    const baseString = Object.keys(payload)
-      .filter((k) => k !== "signature" && payload[k] !== "" && payload[k] !== null && payload[k] !== undefined)
-      .sort()
-      .map((k) => `${k}=${phpUrlEncode(payload[k])}`)
-      .join("&");
+    // 2) merchant sanity
+    const merchantOk =
+      String(posted.merchant_id || "") === String(PAYFAST_MERCHANT_ID || "");
 
-    const computed = crypto
-      .createHash("md5")
-      .update(baseString + `&passphrase=${phpUrlEncode(passphrase)}`)
-      .digest("hex");
+    const sigOk = postedSig && postedSig === signature;
 
-    // Basic verify
-    if (String(computed) !== String(payload.signature || "")) {
-      console.warn("ITN signature mismatch");
-      return res.status(200).send("INVALID"); // PayFast expects 200 always
+    // TODO: optional server-side validation call to PayFast /eng/query/validate
+    // Skipped here; we just acknowledge if sig & merchant look fine.
+
+    if (sigOk && merchantOk) {
+      // You could update DB here (mark subscription pending/active)
+      return res.status(200).send("OK");
     }
 
-    // TODO: verify source IPs and /validate callback (optional in sandbox)
-    // TODO: upsert subscription/customer status into your DB here
-
-    return res.status(200).send("OK");
+    return res.status(400).send("BAD");
   } catch (e) {
-    console.error("ITN error:", e);
-    return res.status(200).send("ERROR"); // still 200
+    return res.status(500).send("ERROR");
   }
-}
+};

@@ -1,32 +1,74 @@
 // api/payfast-initiate.js
-import crypto from "crypto";
-import { URLSearchParams } from "url";
+const crypto = require("crypto");
 
-export default async function handler(req, res) {
+function safeVal(v) {
+  return v === undefined || v === null ? "" : String(v);
+}
+
+function buildSignature(fields, passphrase) {
+  // 1) drop empty + signature
+  const filtered = {};
+  for (const [k, v] of Object.entries(fields || {})) {
+    if (k === "signature") continue;
+    const sv = safeVal(v);
+    if (sv !== "") filtered[k] = sv;
+  }
+  // 2) sort keys
+  const pairs = Object.keys(filtered)
+    .sort()
+    .map((k) => `${k}=${encodeURIComponent(filtered[k]).replace(/%20/g, "+")}`);
+
+  // 3) include passphrase if present (sandbox shows “Salt Passphrase” – must be appended)
+  if (passphrase) {
+    pairs.push(
+      `passphrase=${encodeURIComponent(passphrase).replace(/%20/g, "+")}`
+    );
+  }
+
+  const base = pairs.join("&");
+  const signature = crypto.createHash("md5").update(base).digest("hex");
+  return { base, signature };
+}
+
+function chosenEndpoint(mode) {
+  return mode === "live"
+    ? "https://www.payfast.co.za/eng/process"
+    : "https://sandbox.payfast.co.za/eng/process";
+}
+
+module.exports = async (req, res) => {
   try {
     if (req.method !== "POST") {
-      return res
-        .status(405)
-        .json({ ok: false, error: "Method not allowed. Use POST." });
+      return res.status(405).json({ ok: false, error: "Method not allowed" });
     }
 
-    // ---- ENV ----
-    const MODE = (process.env.PAYFAST_MODE || "sandbox").toLowerCase(); // "sandbox" | "live"
-    const MERCHANT_ID = process.env.PAYFAST_MERCHANT_ID;
-    const MERCHANT_KEY = process.env.PAYFAST_MERCHANT_KEY;
-    const PASS = process.env.PAYFAST_PASSPHRASE || ""; // if empty, we won't append
-    const RETURN_URL = process.env.PAYFAST_RETURN_URL; // e.g. https://ghosthome.co.za/pay?result=success
-    const CANCEL_URL = process.env.PAYFAST_CANCEL_URL; // e.g. https://ghosthome.co.za/pay?result=cancel
-    const NOTIFY_URL = process.env.PAYFAST_NOTIFY_URL; // e.g. https://ghosthome.co.za/api/payfast-itn
+    // Body payload from the /pay page
+    let body = {};
+    try {
+      body = req.body && typeof req.body === "object" ? req.body : JSON.parse(req.body || "{}");
+    } catch {
+      body = {};
+    }
 
-    // Basic env validation so we never send HTML back
+    // ENV
+    const {
+      PAYFAST_MERCHANT_ID,
+      PAYFAST_MERCHANT_KEY,
+      PAYFAST_PASSPHRASE,
+      PAYFAST_MODE,
+      PAYFAST_RETURN_URL,
+      PAYFAST_CANCEL_URL,
+      PAYFAST_NOTIFY_URL,
+    } = process.env;
+
+    // quick validations
     const missing = [];
-    [["PAYFAST_MERCHANT_ID", MERCHANT_ID],
-     ["PAYFAST_MERCHANT_KEY", MERCHANT_KEY],
-     ["PAYFAST_RETURN_URL", RETURN_URL],
-     ["PAYFAST_CANCEL_URL", CANCEL_URL],
-     ["PAYFAST_NOTIFY_URL", NOTIFY_URL],
-     ["PAYFAST_MODE", MODE]].forEach(([k, v]) => { if (!v) missing.push(k); });
+    if (!PAYFAST_MERCHANT_ID) missing.push("PAYFAST_MERCHANT_ID");
+    if (!PAYFAST_MERCHANT_KEY) missing.push("PAYFAST_MERCHANT_KEY");
+    if (!PAYFAST_RETURN_URL) missing.push("PAYFAST_RETURN_URL");
+    if (!PAYFAST_CANCEL_URL) missing.push("PAYFAST_CANCEL_URL");
+    if (!PAYFAST_NOTIFY_URL) missing.push("PAYFAST_NOTIFY_URL");
+    if (!PAYFAST_MODE) missing.push("PAYFAST_MODE");
 
     if (missing.length) {
       return res.status(500).json({
@@ -36,87 +78,78 @@ export default async function handler(req, res) {
       });
     }
 
-    // ---- BODY (secure street page sends plan + billing) ----
-    const { plan = "basic", billing = "monthly", amount } = req.body || {};
-    // Derive amounts if not supplied
-    const cents99 = (n) => Number(n).toFixed(2);
-    const amt = amount ? cents99(amount) :
-      plan === "basic" ? "99.00" :
-      plan === "plus"  ? "149.00" :
-      "99.00";
-    const itemName = plan === "basic"
-      ? "Ghosthome Street Access - 2 cams / 1 account - Monthly"
-      : "Ghosthome Street Access - 4 cams / 2 accounts - Monthly";
+    // plan info coming from the page
+    const plan = safeVal(body.plan || "basic");           // "basic" | "plus"
+    const billing = safeVal(body.billing || "monthly");   // "monthly" | "annual"
+    const amount = Number(body.amount || 99).toFixed(2);  // "99.00"
+    const itemName =
+      plan === "plus"
+        ? "Ghosthome Street Access - 4 cams / 2 accounts - Monthly"
+        : "Ghosthome Street Access - 2 cams / 1 account - Monthly";
 
-    // PayFast recurring: frequency=3 (monthly), cycles=0 (indefinite)
+    // Build fields for recurring subscription (billing = monthly OR annual)
+    // PayFast frequency: 3 = monthly, 6 = annually
+    const frequency = billing === "annual" ? 6 : 3;
+    const recurringAmount = amount; // same as amount
+    const cycles = 0; // 0 = indefinite
+
     const fields = {
-      merchant_id: MERCHANT_ID,
-      merchant_key: MERCHANT_KEY,
-      return_url: RETURN_URL,
-      cancel_url: CANCEL_URL,
-      notify_url: NOTIFY_URL,
-      amount: amt,                             // once-off price used by PF UI; we also send recurring_amount
+      merchant_id: PAYFAST_MERCHANT_ID,
+      merchant_key: PAYFAST_MERCHANT_KEY,
+      return_url: PAYFAST_RETURN_URL,
+      cancel_url: PAYFAST_CANCEL_URL,
+      notify_url: PAYFAST_NOTIFY_URL,
+
+      amount: amount,
       item_name: itemName,
       item_description:
         "Community live-view access with night notifications (customisable hours).",
-      // Custom notes for your admin:
-      custom_str2: plan,                        // "basic" | "plus"
-      custom_str3: billing,                     // "monthly" | "annual" (if you add it later)
 
-      // Recurring billing flags:
-      subscription_type: 1,                     // 1 = subscription
-      recurring_amount: amt,                    // amount billed each cycle
-      frequency: 3,                             // 3 = monthly
-      cycles: 0,                                // 0 = indefinite
+      // Keep only custom_str2 and custom_str3 (we intentionally omit empty custom_str1)
+      custom_str2: plan,
+      custom_str3: billing,
+
+      // Recurring
+      subscription_type: 1,
+      recurring_amount: recurringAmount,
+      frequency,
+      cycles,
     };
 
-    // IMPORTANT: remove empty/undefined keys before signing
-    Object.keys(fields).forEach((k) => {
-      if (fields[k] === undefined || fields[k] === null || fields[k] === "") {
-        delete fields[k];
-      }
-    });
+    const { base, signature } = buildSignature(fields, PAYFAST_PASSPHRASE);
+    const endpoint = chosenEndpoint(PAYFAST_MODE);
 
-    // ---- SIGNATURE (PayFast spec)
-    // 1) Sort keys alphabetically
-    const sortedKeys = Object.keys(fields).sort();
-    // 2) Build "key=value" with URL-encoded values
-    const baseString = sortedKeys
-      .map((k) => `${k}=${encodeURIComponent(String(fields[k]).trim())}`)
-      .join("&");
-    // 3) If you use a passphrase, append &passphrase=<urlencoded>
-    const signBase = PASS ? `${baseString}&passphrase=${encodeURIComponent(PASS)}` : baseString;
-    const signature = crypto.createHash("md5").update(signBase).digest("hex");
+    const redirect =
+      endpoint +
+      "?" +
+      Object.keys(fields)
+        .sort()
+        .map(
+          (k) => `${k}=${encodeURIComponent(fields[k]).replace(/%20/g, "+")}`
+        )
+        .join("&") +
+      `&signature=${signature}`;
 
-    // Fields sent to PayFast INCLUDE the signature but NOT the passphrase
-    const payload = { ...fields, signature };
+    // If the UI asked for diagnostics, include the detail – still 200 OK
+    const wantDiag = String(body.diagnostics || "") === "true";
+    if (wantDiag) {
+      return res.status(200).json({
+        ok: true,
+        redirect,
+        debug: {
+          signature_base: base,
+          signature,
+          mode: PAYFAST_MODE,
+          fields,
+        },
+      });
+    }
 
-    // Redirect target (PayFast engine endpoint)
-    const engine =
-      MODE === "live"
-        ? "https://www.payfast.co.za/eng/process"
-        : "https://sandbox.payfast.co.za/eng/process";
-
-    // We redirect via the client (top-level navigation), not from fetch().
-    // Send a JSON with a full URL (GET with query) so the client can window.location = url
-    const qs = new URLSearchParams(payload).toString();
-    const redirect = `${engine}?${qs}`;
-
-    return res.status(200).json({
-      ok: true,
-      redirect,
-      // helpful during sandbox testing:
-      debug: {
-        signature_base: signBase,
-        signature,
-        mode: MODE,
-        fields: payload,
-      },
-    });
+    // Normal success response
+    return res.status(200).json({ ok: true, redirect });
   } catch (err) {
-    return res.status(500).json({
-      ok: false,
-      error: err?.message || "Unknown error",
-    });
+    return res
+      .status(500)
+      .json({ ok: false, error: err?.message || "Internal error" });
   }
-}
+};
