@@ -1,27 +1,32 @@
 {
   "name": "ghosthome-site",
-  "version": "1.0.0",
   "private": true,
+  "version": "1.3.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --port 5180 --strictPort",
+    "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview --port 5180",
-    "vercel-build": "npm run build"
+    "preview": "vite preview",
+    "test": "vitest run"
   },
   "dependencies": {
-    "clsx": "^2.1.1",
-    "framer-motion": "^12.23.22",
-    "lucide-react": "^0.544.0",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "react-router-dom": "^6.26.2"
+    "@vercel/blob": "^2.0.0",
+    "@vercel/postgres": "^0.10.0",
+    "framer-motion": "11.2.10",
+    "lucide-react": "0.441.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-router-dom": "6.26.2"
   },
   "devDependencies": {
-    "@vitejs/plugin-react": "^4.3.1",
-    "autoprefixer": "^10.4.19",
-    "postcss": "^8.4.41",
-    "tailwindcss": "^3.4.10",
-    "vite": "^5.4.8"
+    "@tailwindcss/typography": "0.5.13",
+    "@types/react": "18.3.3",
+    "@types/react-dom": "18.3.0",
+    "@vitejs/plugin-react": "4.3.1",
+    "autoprefixer": "10.4.20",
+    "postcss": "8.4.41",
+    "tailwindcss": "3.4.10",
+    "vite": "5.4.6",
+    "vitest": "2.0.5"
   }
 }

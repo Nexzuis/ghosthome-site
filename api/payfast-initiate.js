@@ -1,8 +1,7 @@
-// /api/payfast-initiate.js
-// Builds PayFast signature (PHP urlencode: spaces -> "+"), and either:
-//  - minimal once-off (when ?minimal=1)  OR
-//  - subscription (default)
-// Also supports ?debug=1 to return JSON instead of auto-POST HTML.
+// Minimal, bullet-proof PayFast initiator.
+// - ?minimal=1 => once-off payment with only required fields
+// - default => subscription (monthly/yearly)
+// - ?debug=1 => return JSON diagnostics instead of HTML auto-POST
 
 import crypto from "crypto";
 
@@ -11,7 +10,8 @@ const enc = (v) =>
     .replace(/%20/g, "+")
     .replace(/[!'()*]/g, (c) => "%" + c.charCodeAt(0).toString(16).toUpperCase());
 
-function sign(fields, passphrase) {
+function sign(fields, passphraseRaw) {
+  const passphrase = String(passphraseRaw || "").trim();
   const cleaned = {};
   for (const [k, v] of Object.entries(fields)) {
     if (k === "signature") continue;
@@ -25,17 +25,16 @@ function sign(fields, passphrase) {
       .sort()
       .map((k) => `${k}=${enc(cleaned[k])}`)
       .join("&") +
-    (passphrase ? `&passphrase=${enc(String(passphrase).trim())}` : "");
-
+    (passphrase ? `&passphrase=${enc(passphrase)}` : "");
   const signature = crypto.createHash("md5").update(base).digest("hex");
-  return { base, signature };
+  return { base, signature, passphrase };
 }
 
 export default async function handler(req, res) {
   try {
     const url = new URL(req.url, `http://${req.headers.host}`);
-    const plan = (url.searchParams.get("plan") || "basic").toLowerCase();
-    const term = (url.searchParams.get("term") || "monthly").toLowerCase();
+    const plan = (url.searchParams.get("plan") || "basic").toLowerCase();   // basic|plus
+    const term = (url.searchParams.get("term") || "monthly").toLowerCase(); // monthly|yearly
     const minimal = url.searchParams.get("minimal") === "1";
     const debug = url.searchParams.get("debug") === "1";
 
@@ -56,7 +55,10 @@ export default async function handler(req, res) {
     if (!PAYFAST_CANCEL_URL) missing.push("PAYFAST_CANCEL_URL");
     if (!PAYFAST_NOTIFY_URL) missing.push("PAYFAST_NOTIFY_URL");
     if (missing.length) {
-      return res.status(500).json({ ok: false, error: "Missing env", missing });
+      res.statusCode = 500;
+      res.setHeader("Content-Type", "application/json");
+      res.end(JSON.stringify({ ok: false, error: "Missing env", missing }));
+      return;
     }
 
     const engine =
@@ -64,18 +66,17 @@ export default async function handler(req, res) {
         ? "https://www.payfast.co.za/eng/process"
         : "https://sandbox.payfast.co.za/eng/process";
 
-    // prices
+    // Prices & labels
     let amount = 99.0;
     let itemName = "Ghosthome Street Access - 2 cams / 1 account - Monthly";
-    if (plan === "basic" && term === "yearly") { amount = 1099.0; itemName = "Ghosthome Street Access - 2 cams / 1 account - 12 months"; }
-    if (plan === "plus"  && term === "monthly") { amount = 149.0; itemName = "Ghosthome Street Access - 4 cams / 2 accounts - Monthly"; }
+    if (plan === "basic" && term === "yearly")  { amount = 1099.0; itemName = "Ghosthome Street Access - 2 cams / 1 account - 12 months"; }
+    if (plan === "plus"  && term === "monthly") { amount = 149.0;  itemName = "Ghosthome Street Access - 4 cams / 2 accounts - Monthly"; }
     if (plan === "plus"  && term === "yearly")  { amount = 1299.0; itemName = "Ghosthome Street Access - 4 cams / 2 accounts - 12 months"; }
     const amt = amount.toFixed(2);
 
     let fields;
-
     if (minimal) {
-      // 🔹 MINIMAL: once-off, ONLY required fields
+      // 🔹 Minimal once-off: ONLY required fields
       fields = {
         merchant_id: PAYFAST_MERCHANT_ID,
         merchant_key: PAYFAST_MERCHANT_KEY,
@@ -86,23 +87,17 @@ export default async function handler(req, res) {
         item_name: itemName,
       };
     } else {
-      // 🔸 DEFAULT: subscription (monthly/yearly)
-      const frequency = term === "yearly" ? 7 : 3; // PayFast: 7 yearly, 3 monthly
+      // 🔸 Subscription (monthly/yearly)
+      const frequency = term === "yearly" ? 7 : 3; // PayFast: 7=yearly, 3=monthly
       fields = {
         merchant_id: PAYFAST_MERCHANT_ID,
         merchant_key: PAYFAST_MERCHANT_KEY,
         return_url: PAYFAST_RETURN_URL,
         cancel_url: PAYFAST_CANCEL_URL,
         notify_url: PAYFAST_NOTIFY_URL,
-
         amount: amt,
         item_name: itemName,
-        item_description:
-          "Community live-view access with night notifications (customisable hours).",
-
-        custom_str2: plan,
-        custom_str3: term,
-
+        // keep payload tiny to avoid any encoding surprises
         subscription_type: 1,
         recurring_amount: amt,
         frequency,
@@ -110,30 +105,31 @@ export default async function handler(req, res) {
       };
     }
 
-    const { base, signature } = sign(fields, (process.env.PAYFAST_PASSPHRASE || "").trim());
+    const { base, signature, passphrase } = sign(fields, PAYFAST_PASSPHRASE);
 
     if (debug) {
-      return res.status(200).json({
+      res.setHeader("Content-Type", "application/json");
+      res.statusCode = 200;
+      res.end(JSON.stringify({
         ok: true,
         mode: PAYFAST_MODE,
-        passphrase_len: (process.env.PAYFAST_PASSPHRASE || "").trim().length,
-        passphrase_last2: (process.env.PAYFAST_PASSPHRASE || "").trim().slice(-2),
+        passphrase_len: passphrase.length,
+        passphrase_last2: passphrase.slice(-2),
         signature_base: base,
         signature,
         fields: { ...fields, signature },
-      });
+      }, null, 2));
+      return;
     }
 
-    // Return auto-submit POST (no querystring games)
+    // Auto-submit POST page to PayFast
     const inputs = Object.entries({ ...fields, signature })
-      .map(
-        ([k, v]) =>
-          `<input type="hidden" name="${k}" value="${String(v).replace(/"/g, "&quot;")}">`
-      )
+      .map(([k, v]) => `<input type="hidden" name="${k}" value="${String(v).replace(/"/g, "&quot;")}">`)
       .join("\n");
 
     res.setHeader("Content-Type", "text/html; charset=utf-8");
-    res.status(200).end(`<!doctype html>
+    res.statusCode = 200;
+    res.end(`<!doctype html>
 <html><head><meta charset="utf-8"><title>Redirecting…</title></head>
 <body onload="document.forms[0].submit()" style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif">
   <p style="padding:16px">Redirecting to PayFast…</p>
@@ -143,6 +139,8 @@ ${inputs}
   </form>
 </body></html>`);
   } catch (e) {
-    res.status(500).json({ ok: false, error: e?.message || "Server error" });
+    res.statusCode = 500;
+    res.setHeader("Content-Type", "application/json");
+    res.end(JSON.stringify({ ok: false, error: e?.message || "Server error" }));
   }
 }
