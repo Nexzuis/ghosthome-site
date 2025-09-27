@@ -55,7 +55,6 @@ function buildSignature(fields, passphrase) {
   const base =
     Object.keys(fields)
       .filter(k => fields[k] !== undefined && fields[k] !== null && String(fields[k]).length > 0)
-      .sort()
       .map(k => `${urlencodePhp(k)}=${urlencodePhp(fields[k])}`)
       .join("&") + `&passphrase=${urlencodePhp(passphrase)}`;
   const sig = md5(base).toLowerCase();
@@ -91,10 +90,10 @@ export default function handler(req, res) {
       notify_url: NOTIFY_URL,
 
       subscription_type: "1",   // subscription
+      recurring_amount: amount, // monthly
       frequency: "3",           // monthly
       cycles: "0",              // indefinite
       amount: amount,           // REQUIRED by PayFast
-      recurring_amount: amount, // monthly
       item_name: "Ghosthome Monthly"
     };
 
