@@ -1,7 +1,5 @@
-// api/payfast-initiate.js
-// Build PayFast fields + signature (subscription) and return them for a POST form.
-
-import crypto from "crypto";
+// api/payfast-initiate.js (CommonJS, POST form flow, minimal fields)
+const crypto = require("crypto");
 
 function urlencodePhp(value) {
   return encodeURIComponent(String(value)).replace(/%20/g, "+");
@@ -10,7 +8,7 @@ function md5Hex(str) {
   return crypto.createHash("md5").update(str, "utf8").digest("hex");
 }
 
-export default async function handler(req, res) {
+module.exports = async (req, res) => {
   if (req.method !== "POST") {
     res.status(405).json({ ok: false, error: "Method not allowed" });
     return;
@@ -29,24 +27,22 @@ export default async function handler(req, res) {
     return;
   }
 
-  // BASIC plan: R99.00 monthly subscription
-  const amount = "99.00";
-
+  const amount = "99.00"; // BASIC plan
   const fields = {
-    amount,                         // initial amount
-    cancel_url: CANCEL_URL,
-    cycles: 0,                      // 0 = indefinite
-    frequency: 3,                   // 3 = monthly
-    item_name: "Ghosthome Street Access - 2 cams / 1 account - Monthly",
     merchant_id: MERCHANT_ID,
     merchant_key: MERCHANT_KEY,
-    notify_url: NOTIFY_URL,
-    recurring_amount: amount,       // monthly amount
     return_url: RETURN_URL,
-    subscription_type: 1,           // 1 = subscription
+    cancel_url: CANCEL_URL,
+    notify_url: NOTIFY_URL,
+
+    subscription_type: 1,     // subscription
+    frequency: 3,             // monthly
+    amount: amount,
+    recurring_amount: amount,
+
+    item_name: "Ghosthome Monthly", // keep simple
   };
 
-  // Signature base: alpha-sort + PHP urlencode + append passphrase
   const keys = Object.keys(fields).sort();
   const base =
     keys.map((k) => `${urlencodePhp(k)}=${urlencodePhp(fields[k])}`).join("&") +
@@ -59,10 +55,9 @@ export default async function handler(req, res) {
       ? "https://www.payfast.co.za/eng/process"
       : "https://sandbox.payfast.co.za/eng/process";
 
-  // Return raw fields (no encoding), the browser will submit a real form POST.
   res.status(200).json({
     ok: true,
     engine,
     fields: { ...fields, signature },
   });
-}
+};
