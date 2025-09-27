@@ -9,11 +9,12 @@ export default function Pay() {
     setBusy(true);
     setErr("");
     try {
-      const r = await fetch("/api/payfast-initiate", { method: "POST" });
+      // 🔁 NEW ROUTE HERE
+      const r = await fetch("/api/pf-init", { method: "POST" });
       const j = await r.json().catch(() => null);
 
       if (j && j.ok && j.engine && j.fields) {
-        // Build a real HTML form and POST to PayFast (application/x-www-form-urlencoded)
+        // Build a real HTML form and POST to PayFast (x-www-form-urlencoded semantics)
         const form = document.createElement("form");
         form.method = "POST";
         form.action = j.engine;
@@ -33,7 +34,7 @@ export default function Pay() {
 
       setErr(
         j?.error ||
-          `Server error${!r.ok ? ` (HTTP ${r.status})` : ""} ${j ? JSON.stringify(j) : ""}`
+          `Server error${!r.ok ? ` (HTTP ${r.status})` : ""}${j ? ` — ${JSON.stringify(j)}` : ""}`
       );
     } catch (e) {
       setErr(e?.message || "Failed to contact server");
@@ -52,7 +53,7 @@ export default function Pay() {
       {err ? (
         <div className="mt-6 rounded-xl border p-5 bg-red-50 border-red-200 text-red-800">
           <p className="font-medium">Error</p>
-          <pre className="text-xs mt-2 whitespace-pre-wrap">{err}</pre>
+          <pre className="text-xs mt-2 whitespace-pre-wrap break-all">{err}</pre>
         </div>
       ) : null}
 
@@ -67,7 +68,8 @@ export default function Pay() {
       </div>
 
       <p className="mt-8 text-sm text-slate-500">
-        Your card is processed by PayFast. We receive secure notifications (ITN) to activate your access automatically.
+        Your card is processed by PayFast. We receive secure notifications (ITN) to activate your
+        access automatically.
       </p>
     </div>
   );
