@@ -1,9 +1,10 @@
 // /api/pf-init.mjs
 // PayFast initiate (subscriptions) — MINIMAL + STRICT + DEBUG
-// Rules: alpha-sort, PHP urlencode (spaces => '+'), append &passphrase, MD5 hex.
+// Signature rules (this build): alpha-sort, RAW urlencoding (spaces => %20), append &passphrase, MD5 hex.
 
 function urlencodePhp(v) {
-  return encodeURIComponent(String(v)).replace(/%20/g, "+");
+  // RAW urlencoding (like PHP rawurlencode): spaces -> %20
+  return encodeURIComponent(String(v));
 }
 
 // Tiny dependency-free MD5
