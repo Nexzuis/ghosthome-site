@@ -56,6 +56,7 @@ function buildSignature(fields, passphrase) {
       .sort()
       .map(k => `${urlencodePhp(k)}=${urlencodePhp(fields[k])}`)
       .join("&") + `&passphrase=${urlencodePhp(passphrase)}`;
+
   const sig = md5(base);
   console.log("pf-init base:", base);
   console.log("pf-init md5:", sig);
@@ -80,6 +81,7 @@ export default function handler(req, res) {
       return res.status(200).json({ ok: false, error: "Missing config envs" });
     }
 
+    // R99 monthly, indefinite (cycles = 0). Change cycles to a number (e.g., 12) for fixed-length plans.
     const amount = "99.00";
     const fields = {
       merchant_id: MERCHANT_ID,
@@ -87,10 +89,12 @@ export default function handler(req, res) {
       return_url: RETURN_URL,
       cancel_url: CANCEL_URL,
       notify_url: NOTIFY_URL,
-      subscription_type: 1,
-      frequency: 3,
-      amount: amount,
-      recurring_amount: amount,
+
+      subscription_type: 1,     // subscription
+      frequency: 3,             // monthly
+      cycles: 0,                // <-- REQUIRED by PayFast: 0 = indefinite
+      amount: amount,           // initial (optional, we keep it same as monthly)
+      recurring_amount: amount, // monthly
       item_name: "Ghosthome Monthly"
     };
 
