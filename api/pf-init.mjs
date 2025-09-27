@@ -55,7 +55,6 @@ function buildSignature(fields, passphrase) {
   const base =
     Object.keys(fields)
       .filter(k => fields[k] !== undefined && fields[k] !== null && String(fields[k]).length > 0)
-      .sort()
       .map(k => `${urlencodePhp(k)}=${urlencodePhp(fields[k])}`)
       .join("&") + `&passphrase=${urlencodePhp(passphrase)}`;
   const sig = md5(base).toLowerCase();
