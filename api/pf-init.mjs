@@ -1,12 +1,12 @@
+// /api/pf-init.mjs
 // PayFast initiate (subscriptions) — MINIMAL + STRICT + DEBUG
-// Fields kept to bare minimum to reduce mismatch risk.
-// Docs rules: alpha-sort, PHP urlencode (spaces => '+'), append &passphrase, MD5 hex.
+// Rules: alpha-sort, PHP urlencode (spaces => '+'), append &passphrase, MD5 hex.
 
 function urlencodePhp(v) {
   return encodeURIComponent(String(v)).replace(/%20/g, "+");
 }
 
-// Tiny dependency-free MD5 (ASCII-safe for our param strings)
+// Tiny dependency-free MD5
 function md5(s) {
   function rhex(n){const c="0123456789abcdef";let o="";for(let j=0;j<4;j++)o+=c[(n>>(j*8+4))&15]+c[(n>>(j*8))&15];return o}
   function add(x,y){return(((x&65535)+(y&65535))&65535)+((((x>>>16)+(y>>>16))&65535)<<16)}
@@ -57,7 +57,6 @@ function buildSignature(fields, passphrase) {
       .sort()
       .map(k => `${urlencodePhp(k)}=${urlencodePhp(fields[k])}`)
       .join("&") + `&passphrase=${urlencodePhp(passphrase)}`;
-
   const sig = md5(base).toLowerCase();
   return { base, sig };
 }
@@ -68,7 +67,6 @@ export default function handler(req, res) {
       return res.status(405).json({ ok: false, error: "Method not allowed" });
     }
 
-    // Read config, trim to avoid stray spaces
     const MODE = (process.env.PAYFAST_MODE || "sandbox").trim().toLowerCase();
     const MERCHANT_ID  = (process.env.PAYFAST_MERCHANT_ID  || "").trim();
     const MERCHANT_KEY = (process.env.PAYFAST_MERCHANT_KEY || "").trim();
@@ -81,37 +79,34 @@ export default function handler(req, res) {
       return res.status(200).json({ ok: false, error: "Missing config envs" });
     }
 
-    // ===== Minimal subscription fields (strings only) =====
-    const amount = "99.00";
-    const fields = {
-      merchant_id: String(MERCHANT_ID),
-      merchant_key: String(MERCHANT_KEY),
-      return_url: String(RETURN_URL),
-      cancel_url: String(CANCEL_URL),
-      notify_url: String(NOTIFY_URL),
+    const amount = "99.00"; // two decimals, string
 
-      subscription_type: "1",    // subscription
-      frequency: "3",            // monthly
-      cycles: "0",               // indefinite
-      recurring_amount: amount,  // monthly
+    // Minimal required subscription fields (ALL strings)
+    const fields = {
+      merchant_id: MERCHANT_ID,
+      merchant_key: MERCHANT_KEY,
+      return_url: RETURN_URL,
+      cancel_url: CANCEL_URL,
+      notify_url: NOTIFY_URL,
+
+      subscription_type: "1",   // subscription
+      frequency: "3",           // monthly
+      cycles: "0",              // indefinite
+      amount: amount,           // REQUIRED by PayFast
+      recurring_amount: amount, // monthly
       item_name: "Ghosthome Monthly"
-      // NOTE: deliberately NO 'amount' initial to keep payload minimal
     };
 
     const { base, sig } = buildSignature(fields, PASSPHRASE);
-    const engine =
-      MODE === "live" ? "https://www.payfast.co.za/eng/process"
-                      : "https://sandbox.payfast.co.za/eng/process";
+    const engine = MODE === "live"
+      ? "https://www.payfast.co.za/eng/process"
+      : "https://sandbox.payfast.co.za/eng/process";
 
-    // For POST usage by /pay page
     const response = { ok: true, engine, fields: { ...fields, signature: sig } };
-
-    // Debug: expose exactly what we signed (so we can compare to PayFast)
     if (req.method === "GET") {
       response.debug_signature_base = base;
       response.debug_signature_md5 = sig;
     }
-
     res.status(200).json(response);
   } catch (e) {
     res.status(200).json({ ok: false, error: `pf-init error: ${String(e?.message || e)}` });
