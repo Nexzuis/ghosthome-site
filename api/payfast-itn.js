@@ -1,13 +1,58 @@
-// Minimal ITN endpoint. Logs and returns 200 OK so sandbox can complete.
-// You can add full signature validation later if you want.
+// api/payfast-itn.js
+// Node.js Serverless Function (explicit runtime) — simple ITN logger
 
-module.exports = async (req, res) => {
-  try {
-    // PayFast posts form-encoded body. Vercel parses it to req.body if content-type is correct.
-    console.log("PayFast ITN hit:", req.body || {});
-    res.status(200).send("OK"); // MUST respond 200 fast
-  } catch (e) {
-    console.error("ITN error:", e);
-    res.status(200).send("OK"); // still OK; don't risk retries failing
+export const config = { runtime: "nodejs20.x" };
+
+import crypto from "crypto";
+
+function urlencodePhp(value) {
+  return encodeURIComponent(String(value)).replace(/%20/g, "+");
+}
+function md5Hex(str) {
+  return crypto.createHash("md5").update(str, "utf8").digest("hex");
+}
+function parseForm(body) {
+  const out = {};
+  for (const pair of body.split("&")) {
+    if (!pair) continue;
+    const [k, v = ""] = pair.split("=");
+    out[decodeURIComponent(k)] = decodeURIComponent(v.replace(/\+/g, " "));
   }
-};
+  return out;
+}
+function buildBase(params, passphrase) {
+  const q = Object.entries(params)
+    .filter(([k, v]) => k !== "signature" && v !== undefined && v !== null && String(v).length > 0)
+    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+    .map(([k, v]) => `${urlencodePhp(k)}=${urlencodePhp(v)}`)
+    .join("&");
+  return q + (passphrase ? `&passphrase=${urlencodePhp(passphrase)}` : "");
+}
+
+export default async function handler(req, res) {
+  try {
+    let raw = "";
+    await new Promise((resolve, reject) => {
+      req.on("data", c => (raw += c));
+      req.on("end", resolve);
+      req.on("error", reject);
+    });
+
+    const params = parseForm(raw);
+    const postedSig = String(params.signature || "");
+    const base = buildBase(params, process.env.PAYFAST_PASSPHRASE || "");
+    const calc = md5Hex(base);
+
+    console.log("ITN", {
+      m_payment_id: params.m_payment_id,
+      pf_payment_id: params.pf_payment_id,
+      status: params.payment_status,
+      sigOk: postedSig.toLowerCase() === calc.toLowerCase(),
+    });
+
+    res.status(200).send("OK");
+  } catch (e) {
+    console.error("ITN error", e);
+    res.status(200).send("OK");
+  }
+}
