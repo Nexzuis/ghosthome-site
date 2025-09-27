@@ -1,16 +1,8 @@
-// api/payfast-itn.js
-// Node.js Serverless Function (explicit runtime) — simple ITN logger
+// api/payfast-itn.js (CommonJS + node runtime)
+const crypto = require("crypto");
 
-export const config = { runtime: "nodejs20.x" };
-
-import crypto from "crypto";
-
-function urlencodePhp(value) {
-  return encodeURIComponent(String(value)).replace(/%20/g, "+");
-}
-function md5Hex(str) {
-  return crypto.createHash("md5").update(str, "utf8").digest("hex");
-}
+function urlencodePhp(v) { return encodeURIComponent(String(v)).replace(/%20/g, "+"); }
+function md5Hex(s) { return crypto.createHash("md5").update(s, "utf8").digest("hex"); }
 function parseForm(body) {
   const out = {};
   for (const pair of body.split("&")) {
@@ -29,7 +21,7 @@ function buildBase(params, passphrase) {
   return q + (passphrase ? `&passphrase=${urlencodePhp(passphrase)}` : "");
 }
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   try {
     let raw = "";
     await new Promise((resolve, reject) => {
@@ -40,8 +32,7 @@ export default async function handler(req, res) {
 
     const params = parseForm(raw);
     const postedSig = String(params.signature || "");
-    const base = buildBase(params, process.env.PAYFAST_PASSPHRASE || "");
-    const calc = md5Hex(base);
+    const calc = md5Hex(buildBase(params, process.env.PAYFAST_PASSPHRASE || ""));
 
     console.log("ITN", {
       m_payment_id: params.m_payment_id,
@@ -56,3 +47,6 @@ export default async function handler(req, res) {
     res.status(200).send("OK");
   }
 }
+
+module.exports = handler;
+module.exports.config = { runtime: "nodejs" };
