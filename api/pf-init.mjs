@@ -1,13 +1,14 @@
-// /api/pf-init.mjs
-// PayFast initiate (subscriptions) — MINIMAL + STRICT + DEBUG
-// Signature rules (this build): alpha-sort, RAW urlencoding (spaces => %20), append &passphrase, MD5 hex.
+// /api/pf-link.mjs
+// Returns a single redirect URL for PayFast (GET redirect). We sign on the server.
+// Uses RAW urlencoding (spaces => %20). If your PayFast account expects PHP urlencode, 
+// change urlencode() to replace %20 with '+'.
 
-function urlencodePhp(v) {
-  // RAW urlencoding (like PHP rawurlencode): spaces -> %20
-  return encodeURIComponent(String(v));
+function urlencode(v) {
+  return encodeURIComponent(String(v));           // RAW urlencoding  (spaces => %20)
+  // return encodeURIComponent(String(v)).replace(/%20/g, "+"); // PHP urlencode (spaces => '+')
 }
 
-// Tiny dependency-free MD5
+// tiny dependency-free MD5
 function md5(s) {
   function rhex(n){const c="0123456789abcdef";let o="";for(let j=0;j<4;j++)o+=c[(n>>(j*8+4))&15]+c[(n>>(j*8))&15];return o}
   function add(x,y){return(((x&65535)+(y&65535))&65535)+((((x>>>16)+(y>>>16))&65535)<<16)}
@@ -40,8 +41,6 @@ function md5(s) {
     c=gg(c,d,a,b,x[i+7],14,1735328473);b=gg(b,c,d,a,x[i+12],20,-1926607734);
     a=hh(a,b,c,d,x[i+5],4,-378558);d=hh(d,a,b,c,x[i+8],11,-2022574463);
     c=hh(c,d,a,b,x[i+11],16,1839030562);b=hh(b,c,d,a,x[i+14],23,-35309556);
-    a=hh(a,b,c,d,x[i+13],4,681279174);d=hh(d,a,b,c,x[i+0],11,-358537222);
-    c=hh(c,d,a,b,x[i+3],16,-722521979);b=hh(b,c,d,a,x[i+6],23,76029189);
     a=ii(a,b,c,d,x[i+0],6,-198630844);d=ii(d,a,b,c,x[i+7],10,1126891415);
     c=ii(c,d,a,b,x[i+14],15,-1416354905);b=ii(b,c,d,a,x[i+5],21,-57434055);
     a=ii(a,b,c,d,x[i+12],6,1700485571);d=ii(d,a,b,c,x[i+3],10,-1894986606);
@@ -56,18 +55,13 @@ function buildSignature(fields, passphrase) {
     Object.keys(fields)
       .filter(k => fields[k] !== undefined && fields[k] !== null && String(fields[k]).length > 0)
       .sort()
-      .map(k => `${urlencodePhp(k)}=${urlencodePhp(fields[k])}`)
-      .join("&") + `&passphrase=${urlencodePhp(passphrase)}`;
-  const sig = md5(base).toLowerCase();
-  return { base, sig };
+      .map(k => `${urlencode(k)}=${urlencode(fields[k])}`)
+      .join("&") + `&passphrase=${urlencode(passphrase)}`;
+  return { base, sig: md5(base).toLowerCase() };
 }
 
 export default function handler(req, res) {
   try {
-    if (req.method !== "POST" && req.method !== "GET") {
-      return res.status(405).json({ ok: false, error: "Method not allowed" });
-    }
-
     const MODE = (process.env.PAYFAST_MODE || "sandbox").trim().toLowerCase();
     const MERCHANT_ID  = (process.env.PAYFAST_MERCHANT_ID  || "").trim();
     const MERCHANT_KEY = (process.env.PAYFAST_MERCHANT_KEY || "").trim();
@@ -80,21 +74,18 @@ export default function handler(req, res) {
       return res.status(200).json({ ok: false, error: "Missing config envs" });
     }
 
-    const amount = "99.00"; // two decimals, string
-
-    // Minimal required subscription fields (ALL strings)
+    const amount = "99.00";
     const fields = {
       merchant_id: MERCHANT_ID,
       merchant_key: MERCHANT_KEY,
       return_url: RETURN_URL,
       cancel_url: CANCEL_URL,
       notify_url: NOTIFY_URL,
-
-      subscription_type: "1",   // subscription
-      frequency: "3",           // monthly
-      cycles: "0",              // indefinite
-      amount: amount,           // REQUIRED by PayFast
-      recurring_amount: amount, // monthly
+      subscription_type: "1",
+      frequency: "3",
+      cycles: "0",
+      amount: amount,
+      recurring_amount: amount,
       item_name: "Ghosthome Monthly"
     };
 
@@ -103,13 +94,18 @@ export default function handler(req, res) {
       ? "https://www.payfast.co.za/eng/process"
       : "https://sandbox.payfast.co.za/eng/process";
 
-    const response = { ok: true, engine, fields: { ...fields, signature: sig } };
-    if (req.method === "GET") {
-      response.debug_signature_base = base;
-      response.debug_signature_md5 = sig;
-    }
-    res.status(200).json(response);
+    const qs = Object.keys(fields).sort()
+      .map(k => `${urlencode(k)}=${urlencode(fields[k])}`).join("&");
+
+    const redirect = `${engine}?${qs}&signature=${sig}`;
+
+    res.status(200).json({
+      ok: true,
+      redirect,
+      debug_signature_base: base,
+      debug_signature_md5: sig
+    });
   } catch (e) {
-    res.status(200).json({ ok: false, error: `pf-init error: ${String(e?.message || e)}` });
+    res.status(200).json({ ok: false, error: `pf-link error: ${String(e?.message || e)}` });
   }
 }

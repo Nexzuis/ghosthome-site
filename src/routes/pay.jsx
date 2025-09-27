@@ -1,4 +1,4 @@
-// calls /api/pf-init, then builds a real HTML form POST to PayFast
+// /src/routes/pay.jsx
 import { useState } from "react";
 
 export default function Pay() {
@@ -11,28 +11,12 @@ export default function Pay() {
     setErr("");
     setDbg(null);
     try {
-      const r = await fetch("/api/pf-init", { method: "POST" });
+      const r = await fetch("/api/pf-link", { method: "GET" });
       const j = await r.json().catch(() => null);
 
-      if (j && j.ok && j.engine && j.fields) {
-        // Show debug in case user wants to verify
-        setDbg({ engine: j.engine, fields: j.fields });
-
-        // Build a FORM that posts exactly the fields returned by the API
-        const form = document.createElement("form");
-        form.method = "POST";
-        form.action = j.engine;
-
-        Object.entries(j.fields).forEach(([k, v]) => {
-          const input = document.createElement("input");
-          input.type = "hidden";
-          input.name = String(k);
-          input.value = String(v);
-          form.appendChild(input);
-        });
-
-        document.body.appendChild(form);
-        form.submit();
+      if (j && j.ok && j.redirect) {
+        setDbg({ redirect: j.redirect, sig: j.debug_signature_md5, base: j.debug_signature_base });
+        window.location.href = j.redirect;   // simple redirect
         return;
       }
 
@@ -58,7 +42,7 @@ export default function Pay() {
 
       {dbg && (
         <div className="mt-6 rounded-xl border p-5 bg-slate-50 border-slate-200 text-slate-800">
-          <p className="font-medium">Debug (fields posted)</p>
+          <p className="font-medium">Debug</p>
           <pre className="text-xs mt-2 whitespace-pre-wrap break-all">
             {JSON.stringify(dbg, null, 2)}
           </pre>
