@@ -90,10 +90,10 @@ export default function handler(req, res) {
       notify_url: NOTIFY_URL,
 
       subscription_type: "1",   // subscription
+      recurring_amount: amount, // monthly
       frequency: "3",           // monthly
       cycles: "0",              // indefinite
       amount: amount,           // REQUIRED by PayFast
-      recurring_amount: amount, // monthly
       item_name: "Ghosthome Monthly"
     };
 
