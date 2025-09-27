@@ -1,8 +1,7 @@
 // /api/pf-itn.js
-// New ITN route name to avoid old conflicts. Node runtime + pure-JS MD5.
+// Verify signature from posted fields (exclude 'signature'), alpha-sort, PHP urlencode, append passphrase, MD5.
 
 function urlencodePhp(v){return encodeURIComponent(String(v)).replace(/%20/g,"+");}
-// reuse same md5 implementation as above (shortened here for space)
 function md5(s){function rhex(n){const c="0123456789abcdef";let o="";for(let j=0;j<4;j++)o+=c[(n>>(j*8+4))&15]+c[(n>>(j*8))&15];return o}
 function add(x,y){return(((x&65535)+(y&65535))&65535)+((((x>>>16)+(y>>>16))&65535)<<16)}
 function rol(n,c){return(n<<c)|(n>>>(32-c))}
@@ -42,43 +41,41 @@ for(let i=0;i<x.length;i+=16){const oa=a,ob=b,oc=c,od=d;
  c=ii(c,d,a,b,x[i+14],15,-1416354905);b=ii(b,c,d,a,x[i+5],21,-57434055);
  a=ii(a,b,c,d,x[i+12],6,1700485571);d=ii(d,a,b,c,x[i+3],10,-1894986606);
  c=ii(c,d,a,b,x[i+10],15,-1051523);b=ii(b,c,d,a,x[i+1],21,-2054922799);
- a=add(a,oa);b=add(b,ob);c=add(c,oc);d=add(d,od);}return rhex(a)+rhex(b)+rhex(c)+rhex(d)}
+ return rhex(a)+rhex(b)+rhex(c)+rhex(d)}
 
-async function handler(req, res) {
+function handler(req, res) {
   try {
     let raw = "";
-    await new Promise((resolve, reject) => {
-      req.on("data", c => (raw += c));
-      req.on("end", resolve);
-      req.on("error", reject);
+    req.on("data", c => (raw += c));
+    req.on("end", () => {
+      const params = {};
+      for (const pair of raw.split("&")) {
+        if (!pair) continue;
+        const [k, v = ""] = pair.split("=");
+        params[decodeURIComponent(k)] = decodeURIComponent(v.replace(/\+/g, " "));
+      }
+      const pass = (process.env.PAYFAST_PASSPHRASE || "").trim();
+
+      const base = Object.entries(params)
+        .filter(([k, v]) => k !== "signature" && v !== undefined && v !== null && String(v).length > 0)
+        .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+        .map(([k, v]) => `${urlencodePhp(k)}=${urlencodePhp(v)}`)
+        .join("&") + (pass ? `&passphrase=${urlencodePhp(pass)}` : "");
+
+      const calc = md5(base);
+      const ok = String(params.signature || "").toLowerCase() === calc.toLowerCase();
+
+      console.log("pf-itn", {
+        pf_payment_id: params.pf_payment_id,
+        payment_status: params.payment_status,
+        sigOk: ok
+      });
+
+      // Always 200 so PayFast doesn’t retry
+      res.status(200).send("OK");
     });
-
-    const params = {};
-    for (const pair of raw.split("&")) {
-      if (!pair) continue;
-      const [k, v = ""] = pair.split("=");
-      params[decodeURIComponent(k)] = decodeURIComponent(v.replace(/\+/g, " "));
-    }
-
-    const pass = (process.env.PAYFAST_PASSPHRASE || "").trim();
-    const q = Object.entries(params)
-      .filter(([k, v]) => k !== "signature" && v !== undefined && v !== null && String(v).length > 0)
-      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
-      .map(([k, v]) => `${urlencodePhp(k)}=${urlencodePhp(v)}`)
-      .join("&");
-    const calc = md5(q + (pass ? `&passphrase=${urlencodePhp(pass)}` : ""));
-    const sigOk = String(params.signature || "").toLowerCase() === calc.toLowerCase();
-
-    console.log("pf-itn", {
-      m_payment_id: params.m_payment_id,
-      pf_payment_id: params.pf_payment_id,
-      status: params.payment_status,
-      sigOk
-    });
-
-    res.status(200).send("OK");
+    req.on("error", () => res.status(200).send("OK"));
   } catch (e) {
-    console.error("pf-itn error", e);
     res.status(200).send("OK");
   }
 }

@@ -9,16 +9,13 @@ export default function Pay() {
     setBusy(true);
     setErr("");
     try {
-      // 🔁 NEW ROUTE HERE
       const r = await fetch("/api/pf-init", { method: "POST" });
       const j = await r.json().catch(() => null);
 
       if (j && j.ok && j.engine && j.fields) {
-        // Build a real HTML form and POST to PayFast (x-www-form-urlencoded semantics)
         const form = document.createElement("form");
         form.method = "POST";
         form.action = j.engine;
-
         Object.entries(j.fields).forEach(([k, v]) => {
           const input = document.createElement("input");
           input.type = "hidden";
@@ -26,16 +23,11 @@ export default function Pay() {
           input.value = String(v);
           form.appendChild(input);
         });
-
         document.body.appendChild(form);
         form.submit();
         return;
       }
-
-      setErr(
-        j?.error ||
-          `Server error${!r.ok ? ` (HTTP ${r.status})` : ""}${j ? ` — ${JSON.stringify(j)}` : ""}`
-      );
+      setErr(j?.error || `Server error${!r.ok ? ` (HTTP ${r.status})` : ""}`);
     } catch (e) {
       setErr(e?.message || "Failed to contact server");
     } finally {
@@ -46,16 +38,14 @@ export default function Pay() {
   return (
     <div className="max-w-3xl mx-auto px-6 py-16">
       <h1 className="text-3xl font-semibold">Payment</h1>
-      <p className="mt-2">
-        You’re subscribing to <b>BASIC</b> (monthly) — <b>R99</b>.
-      </p>
+      <p className="mt-2">You’re subscribing to <b>BASIC</b> (monthly) — <b>R99</b>.</p>
 
-      {err ? (
+      {err && (
         <div className="mt-6 rounded-xl border p-5 bg-red-50 border-red-200 text-red-800">
           <p className="font-medium">Error</p>
           <pre className="text-xs mt-2 whitespace-pre-wrap break-all">{err}</pre>
         </div>
-      ) : null}
+      )}
 
       <div className="mt-6">
         <button
@@ -66,11 +56,6 @@ export default function Pay() {
           {busy ? "Contacting PayFast…" : "Pay with PayFast"}
         </button>
       </div>
-
-      <p className="mt-8 text-sm text-slate-500">
-        Your card is processed by PayFast. We receive secure notifications (ITN) to activate your
-        access automatically.
-      </p>
     </div>
   );
 }

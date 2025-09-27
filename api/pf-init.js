@@ -1,10 +1,10 @@
 // /api/pf-init.js
-// New route (avoid old filename). Node runtime + pure-JS MD5.
-// Returns fields for a real HTML form POST to PayFast.
+// Node serverless. Returns PayFast fields + signature for REAL HTML form POST.
+// Rules per docs: alpha sort, PHP urlencode (spaces => '+'), append &passphrase=..., MD5 hex.
 
 function urlencodePhp(v) { return encodeURIComponent(String(v)).replace(/%20/g, "+"); }
 
-// Tiny dependency-free MD5 (ASCII-safe)
+// Tiny, dependency-free MD5 (ASCII-safe, enough for our param strings)
 function md5(s){function rhex(n){const c="0123456789abcdef";let o="";for(let j=0;j<4;j++)o+=c[(n>>(j*8+4))&15]+c[(n>>(j*8))&15];return o}
 function add(x,y){return(((x&65535)+(y&65535))&65535)+((((x>>>16)+(y>>>16))&65535)<<16)}
 function rol(n,c){return(n<<c)|(n>>>(32-c))}
@@ -46,41 +46,52 @@ for(let i=0;i<x.length;i+=16){const oa=a,ob=b,oc=c,od=d;
  c=ii(c,d,a,b,x[i+10],15,-1051523);b=ii(b,c,d,a,x[i+1],21,-2054922799);
  a=add(a,oa);b=add(b,ob);c=add(c,oc);d=add(d,od);}return rhex(a)+rhex(b)+rhex(c)+rhex(d)}
 
+function buildSignature(fields, passphrase) {
+  const base = Object.keys(fields)
+    .filter(k => fields[k] !== undefined && fields[k] !== null && String(fields[k]).length > 0)
+    .sort()
+    .map(k => `${urlencodePhp(k)}=${urlencodePhp(fields[k])}`)
+    .join("&") + `&passphrase=${urlencodePhp(passphrase)}`;
+  return md5(base);
+}
+
 function handler(req, res) {
   try {
-    if (req.method === "GET") {
-      return res.status(200).json({ ok: true, route: "pf-init", note: "Use POST from /pay page" });
-    }
-    if (req.method !== "POST") {
+    // Allow GET for quick health checks; POST is used by your /pay page
+    if (req.method !== "POST" && req.method !== "GET") {
       return res.status(405).json({ ok: false, error: "Method not allowed" });
     }
 
     const env = process.env;
     const MODE = (env.PAYFAST_MODE || "sandbox").trim().toLowerCase();
+    const MERCHANT_ID = (env.PAYFAST_MERCHANT_ID || "").trim();
+    const MERCHANT_KEY = (env.PAYFAST_MERCHANT_KEY || "").trim();
+    const PASSPHRASE = (env.PAYFAST_PASSPHRASE || "").trim();
+    const RETURN_URL = (env.PAYFAST_RETURN_URL || "").trim();
+    const CANCEL_URL = (env.PAYFAST_CANCEL_URL || "").trim();
+    const NOTIFY_URL = (env.PAYFAST_NOTIFY_URL || "").trim();
 
+    if (!MERCHANT_ID || !MERCHANT_KEY || !RETURN_URL || !CANCEL_URL || !NOTIFY_URL || !PASSPHRASE) {
+      return res.status(200).json({ ok: false, error: "Missing config envs" });
+    }
+
+    // Minimal, spec-compliant subscription
+    const amount = "99.00";
     const fields = {
-      merchant_id: (env.PAYFAST_MERCHANT_ID || "").trim(),
-      merchant_key: (env.PAYFAST_MERCHANT_KEY || "").trim(),
-      return_url: (env.PAYFAST_RETURN_URL || "").trim(),
-      cancel_url: (env.PAYFAST_CANCEL_URL || "").trim(),
-      notify_url: (env.PAYFAST_NOTIFY_URL || "").trim(),
-      subscription_type: 1,
-      frequency: 3,
-      amount: "99.00",
-      recurring_amount: "99.00",
+      merchant_id: MERCHANT_ID,
+      merchant_key: MERCHANT_KEY,
+      return_url: RETURN_URL,
+      cancel_url: CANCEL_URL,
+      notify_url: NOTIFY_URL,
+
+      subscription_type: 1,    // subscription
+      frequency: 3,            // monthly
+      amount: amount,          // initial
+      recurring_amount: amount,// monthly
       item_name: "Ghosthome Monthly"
     };
-    const passphrase = (env.PAYFAST_PASSPHRASE || "").trim();
 
-    // Minimal sanity
-    for (const k of ["merchant_id","merchant_key","return_url","cancel_url","notify_url"]) {
-      if (!fields[k]) return res.status(200).json({ ok: false, error: `Missing ${k}` });
-    }
-    if (!passphrase) return res.status(200).json({ ok: false, error: "Missing PASSPHRASE" });
-
-    const base = Object.keys(fields).sort().map(k => `${urlencodePhp(k)}=${urlencodePhp(fields[k])}`).join("&")
-                + `&passphrase=${urlencodePhp(passphrase)}`;
-    const signature = md5(base);
+    const signature = buildSignature(fields, PASSPHRASE);
 
     const engine = MODE === "live"
       ? "https://www.payfast.co.za/eng/process"
@@ -88,7 +99,7 @@ function handler(req, res) {
 
     return res.status(200).json({ ok: true, engine, fields: { ...fields, signature } });
   } catch (e) {
-    return res.status(200).json({ ok: false, error: `pf-init crash: ${String(e?.message || e)}` });
+    return res.status(200).json({ ok: false, error: `pf-init error: ${String(e?.message || e)}` });
   }
 }
 module.exports = handler;
