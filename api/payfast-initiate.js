@@ -1,4 +1,6 @@
-// api/payfast-initiate.js — R99 monthly subscription, correct PayFast signature
+// api/payfast-initiate.js
+// Build PayFast fields + signature (subscription) and return them for a POST form.
+
 import crypto from "crypto";
 
 function urlencodePhp(value) {
@@ -27,44 +29,40 @@ export default async function handler(req, res) {
     return;
   }
 
-  // BASIC plan: R99.00 monthly
+  // BASIC plan: R99.00 monthly subscription
   const amount = "99.00";
 
-  // Recurring subscription (PayFast)
   const fields = {
-    amount,
+    amount,                         // initial amount
     cancel_url: CANCEL_URL,
-    cycles: 0,                // 0 = indefinite
-    frequency: 3,             // 3 = monthly
+    cycles: 0,                      // 0 = indefinite
+    frequency: 3,                   // 3 = monthly
     item_name: "Ghosthome Street Access - 2 cams / 1 account - Monthly",
     merchant_id: MERCHANT_ID,
     merchant_key: MERCHANT_KEY,
     notify_url: NOTIFY_URL,
-    recurring_amount: amount,
+    recurring_amount: amount,       // monthly amount
     return_url: RETURN_URL,
-    subscription_type: 1,     // 1 = subscription
+    subscription_type: 1,           // 1 = subscription
   };
 
-  // Build signature base: alpha sort, PHP urlencode, exclude signature
+  // Signature base: alpha-sort + PHP urlencode + append passphrase
   const keys = Object.keys(fields).sort();
-  const signatureBase =
+  const base =
     keys.map((k) => `${urlencodePhp(k)}=${urlencodePhp(fields[k])}`).join("&") +
     `&passphrase=${urlencodePhp(PASSPHRASE)}`;
 
-  const signature = md5Hex(signatureBase);
-
-  const sendFields = { ...fields, signature };
+  const signature = md5Hex(base);
 
   const engine =
     MODE === "live"
       ? "https://www.payfast.co.za/eng/process"
       : "https://sandbox.payfast.co.za/eng/process";
 
-  const query = Object.keys(sendFields)
-    .sort()
-    .map((k) => `${k}=${urlencodePhp(sendFields[k])}`)
-    .join("&");
-
-  const redirect = `${engine}?${query}`;
-  res.status(200).json({ ok: true, redirect });
+  // Return raw fields (no encoding), the browser will submit a real form POST.
+  res.status(200).json({
+    ok: true,
+    engine,
+    fields: { ...fields, signature },
+  });
 }

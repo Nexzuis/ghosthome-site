@@ -1,5 +1,5 @@
 // src/routes/pay.jsx
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 export default function Pay() {
   const [busy, setBusy] = useState(false);
@@ -10,42 +10,37 @@ export default function Pay() {
     setErr("");
     try {
       const r = await fetch("/api/payfast-initiate", { method: "POST" });
-      // Try to parse JSON even if r.ok is false
-      let j = null;
-      try {
-        j = await r.json();
-      } catch (_) {
-        // ignore
-      }
+      const j = await r.json().catch(() => null);
 
-      // Hard success path: ok + redirect present
-      if (j && j.ok && j.redirect) {
-        window.location.assign(j.redirect);
+      if (j && j.ok && j.engine && j.fields) {
+        // Build a real HTML form and POST to PayFast (application/x-www-form-urlencoded)
+        const form = document.createElement("form");
+        form.method = "POST";
+        form.action = j.engine;
+
+        Object.entries(j.fields).forEach(([k, v]) => {
+          const input = document.createElement("input");
+          input.type = "hidden";
+          input.name = k;
+          input.value = String(v);
+          form.appendChild(input);
+        });
+
+        document.body.appendChild(form);
+        form.submit();
         return;
       }
 
-      // If backend sent useful debug, show it; otherwise generic
-      if (j && (j.error || j.message || j.redirect)) {
-        setErr(
-          j.error ||
-            j.message ||
-            // show the body so we can see what came back
-            JSON.stringify(j, null, 2)
-        );
-        return;
-      }
-
-      setErr(`Server error${!r.ok ? ` (HTTP ${r.status})` : ""}`);
+      setErr(
+        j?.error ||
+          `Server error${!r.ok ? ` (HTTP ${r.status})` : ""} ${j ? JSON.stringify(j) : ""}`
+      );
     } catch (e) {
       setErr(e?.message || "Failed to contact server");
     } finally {
       setBusy(false);
     }
   }
-
-  useEffect(() => {
-    // no auto-submit
-  }, []);
 
   return (
     <div className="max-w-3xl mx-auto px-6 py-16">
@@ -54,18 +49,9 @@ export default function Pay() {
         You’re subscribing to <b>BASIC</b> (monthly) — <b>R99</b>.
       </p>
 
-      <div className="mt-6 rounded-xl border p-5 bg-green-50 border-green-200 text-green-800">
-        <p className="font-medium">Subscription: billed monthly until you cancel.</p>
-        <ul className="list-disc pl-6 mt-2">
-          <li>Plan: basic</li>
-          <li>Billing: monthly</li>
-          <li>Amount: R99</li>
-        </ul>
-      </div>
-
       {err ? (
         <div className="mt-6 rounded-xl border p-5 bg-red-50 border-red-200 text-red-800">
-          <p className="font-medium">Server error</p>
+          <p className="font-medium">Error</p>
           <pre className="text-xs mt-2 whitespace-pre-wrap">{err}</pre>
         </div>
       ) : null}
