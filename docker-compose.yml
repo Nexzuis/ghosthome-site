@@ -1,0 +1,30 @@
+version: "3.9"
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    ports:
+      - "5180:5180"
+    depends_on:
+      - api
+    environment:
+      - VITE_API_URL=http://api:3000
+    volumes:
+      - .:/app                # mount project root into /app
+      - /app/node_modules     # prevent overwriting node_modules
+    env_file: ".env"
+    command: npm run dev
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./api:/api              # mount only the api folder
+      - /api/node_modules       # prevent overwriting node_modules
+    env_file: ".env"
+    command: npm run start:dev

@@ -7,7 +7,12 @@ import pg from "pg";
 const { Client } = pg;
 
 async function readBody(req) {
-  // Accept JSON (recommended) or x-www-form-urlencoded
+  // If Express already parsed it, just return
+  if (req.body && Object.keys(req.body).length > 0) {
+    return req.body;
+  }
+
+  // Otherwise, parse the raw request
   const ct = (req.headers["content-type"] || "").toLowerCase();
   if (ct.includes("application/json")) {
     const chunks = [];
@@ -27,8 +32,8 @@ async function readBody(req) {
     }
     return obj;
   }
-  // Fallback: try req.body if framework already parsed it
-  return req.body || {};
+
+  return {};
 }
 
 async function ensureTables(client) {

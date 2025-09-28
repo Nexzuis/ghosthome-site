@@ -1,0 +1,10 @@
+FROM node:20-alpine
+
+WORKDIR /api
+COPY api/package.json api/package-lock.json* ./
+RUN npm install
+
+COPY api .
+
+EXPOSE 3000
+CMD ["node", "index.mjs"]
