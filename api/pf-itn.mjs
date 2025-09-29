@@ -33,8 +33,7 @@ export default async function handler(req, res) {
           ([k, v]) =>
             k !== "signature" &&
             v !== undefined &&
-            v !== null &&
-            String(v).length > 0
+            v !== null
         )
         .map(([k, v]) => `${urlencodePhp(k)}=${urlencodePhp(v)}`)
         .join("&") +
