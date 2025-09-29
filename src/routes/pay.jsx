@@ -1,24 +1,26 @@
-// calls /api/pf-init, then builds a real HTML form POST to PayFast
 import { useState } from "react";
 
 export default function Pay() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const [dbg, setDbg] = useState(null);
+  const [amount, setAmount] = useState("99");
+
+  const params = new URLSearchParams(window.location.search);
+  const signupId = params.get("signupId");
+  const result = params.get("result");
 
   async function start() {
     setBusy(true);
     setErr("");
     setDbg(null);
     try {
-      const r = await fetch("/api/pf-init", { method: "POST" });
+      const r = await fetch(`/api/pf-init?signupId=${encodeURIComponent(signupId)}`, {
+        method: "POST"
+      });
       const j = await r.json().catch(() => null);
 
       if (j && j.ok && j.engine && j.fields) {
-        // Show debug in case user wants to verify
-        setDbg({ engine: j.engine, fields: j.fields });
-
-        // Build a FORM that posts exactly the fields returned by the API
         const form = document.createElement("form");
         form.method = "POST";
         form.action = j.engine;
@@ -47,7 +49,7 @@ export default function Pay() {
   return (
     <div className="max-w-3xl mx-auto px-6 py-16">
       <h1 className="text-3xl font-semibold">Payment</h1>
-      <p className="mt-2">R99/month (via PayFast)</p>
+      <p className="mt-2">R{amount} (via PayFast)</p>
 
       {err && (
         <div className="mt-6 rounded-xl border p-5 bg-red-50 border-red-200 text-red-800">
@@ -66,13 +68,22 @@ export default function Pay() {
       )}
 
       <div className="mt-6">
-        <button
-          onClick={start}
-          disabled={busy}
-          className="inline-flex items-center rounded-xl px-5 py-3 bg-black text-white hover:bg-gray-900 disabled:opacity-60"
-        >
-          {busy ? "Contacting PayFast…" : "Pay with PayFast"}
-        </button>
+        {result === "success" ? (
+          <div className="rounded-xl border p-5 bg-green-50 border-green-200 text-green-800">
+            <p className="font-medium">Payment successful!</p>
+            <p className="text-sm mt-1">
+              Thank you — your subscription has been activated.
+            </p>
+          </div>
+        ) : (
+          <button
+            onClick={start}
+            disabled={busy}
+            className="inline-flex items-center rounded-xl px-5 py-3 bg-black text-white hover:bg-gray-900 disabled:opacity-60"
+          >
+            {busy ? "Contacting PayFast…" : "Pay with PayFast"}
+          </button>
+        )}
       </div>
     </div>
   );
