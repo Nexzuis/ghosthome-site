@@ -10,6 +10,9 @@ import {
 } from "lucide-react";
 
 export default function Upload() {
+  const params = new URLSearchParams(window.location.search);
+  const result = params.get("result");
+
   const [idFile, setIdFile] = useState(null);
   const [poaFile, setPoaFile] = useState(null);
   const [idStatus, setIdStatus] = useState("idle");
@@ -88,6 +91,22 @@ export default function Upload() {
           <ArrowLeft className="h-4 w-4" />
           Back to Home
         </Link>
+      </div>
+
+      <div className="mt-6">
+        {result === "success" ? (
+          <div>
+            <div className="rounded-xl border p-5 bg-green-50 border-green-200 text-green-800 mb-5">
+              <p className="font-medium">Payment successful!</p>
+              <p className="text-sm mt-1">
+                Thank you — your subscription has been activated.<br/>
+                We will be in touch shortly with your account details.<br/>
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div></div>
+        )}
       </div>
 
       <header className="relative overflow-hidden rounded-3xl border border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-sky-50 p-6">
