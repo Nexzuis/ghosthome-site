@@ -93,6 +93,11 @@ export default function Signup() {
           at: new Date().toISOString(),
         })
       );
+    } else {
+      localStorage.setItem(
+        'ghosthome_signup_id',
+        signupId
+      )
     }
 
     setBusy(false);

@@ -33,7 +33,7 @@ const router = createBrowserRouter([
       { path: "privacy", element: <Privacy /> },
       { path: "terms", element: <Terms /> },
       { path: "admin", element: <Admin /> },
-      { path: "upload/:token", element: <Upload /> },
+      { path: "upload", element: <Upload /> },
 
       // ✅ New: routes that were 404ing
       { path: "signup", element: <Signup /> },

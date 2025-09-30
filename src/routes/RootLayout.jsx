@@ -71,6 +71,7 @@ export default function RootLayout() {
             <NavItem to="/contact" label="Contact" />
             <NavItem to="/privacy" label="Privacy" />
             <NavItem to="/terms" label="Terms" />
+            <NavItem to="/upload" label="Upload" />
           </nav>
 
           {/* Mobile menu */}
@@ -96,6 +97,7 @@ export default function RootLayout() {
                 <NavItem to="/contact" label="Contact" />
                 <NavItem to="/privacy" label="Privacy" />
                 <NavItem to="/terms" label="Terms" />
+                <NavItem to="/upload" label="Upload" />
               </div>
             </nav>
           </div>

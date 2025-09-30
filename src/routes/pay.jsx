@@ -49,7 +49,6 @@ export default function Pay() {
   return (
     <div className="max-w-3xl mx-auto px-6 py-16">
       <h1 className="text-3xl font-semibold">Payment</h1>
-      <p className="mt-2">R{amount} (via PayFast)</p>
 
       {err && (
         <div className="mt-6 rounded-xl border p-5 bg-red-50 border-red-200 text-red-800">
@@ -69,11 +68,15 @@ export default function Pay() {
 
       <div className="mt-6">
         {result === "success" ? (
-          <div className="rounded-xl border p-5 bg-green-50 border-green-200 text-green-800">
-            <p className="font-medium">Payment successful!</p>
-            <p className="text-sm mt-1">
-              Thank you — your subscription has been activated.
-            </p>
+          <div>
+            <div className="rounded-xl border p-5 bg-green-50 border-green-200 text-green-800 mb-5">
+              <p className="font-medium">Payment successful!</p>
+              <p className="text-sm mt-1">
+                Thank you — your subscription has been activated.<br/>
+                We will be in touch shortly with your account details.<br/>
+                In the meantime, please upload your documents <a href="/upload" className="underline font-medium">here</a>!
+              </p>
+            </div>
           </div>
         ) : (
           <button
