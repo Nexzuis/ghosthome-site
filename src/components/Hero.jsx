@@ -1,77 +1,66 @@
-import { motion } from "framer-motion";
-import HeroBullets from "./HeroBullets.jsx";
-import { genericMessage, makeWaLink } from "../lib/whatsapp.js";
+import React from "react";
+import { Link } from "react-router-dom";
+import { Shield, Camera, ArrowRight } from "lucide-react";
 
+/**
+ * Street-first hero with subtle gradient energy behind it,
+ * clearer headline hierarchy and stronger CTA hover states.
+ */
 export default function Hero() {
-  const waGeneric = makeWaLink({ message: genericMessage() });
-
   return (
-    <section className="py-10">
-      <div className="grid md:grid-cols-2 gap-10 items-center">
-        {/* Left: copy + CTAs */}
-        <div>
-          <motion.h1
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="text-4xl md:text-5xl font-extrabold tracking-tight text-neutral-900"
-          >
-            Smart CCTV that <span className="text-brand">acts</span>, not just records
-          </motion.h1>
+    <section className="relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 sm:p-10">
+      {/* Decorative soft gradients (non-intrusive) */}
+      <div className="pointer-events-none absolute -top-24 -left-16 h-72 w-72 rounded-full bg-emerald-200/30 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-28 -right-12 h-80 w-80 rounded-full bg-emerald-100/40 blur-3xl" />
 
-          <p className="mt-4 text-neutral-600">
-            AI detection for people, pets, and vehicles. Instant indoor chime, siren and lights.
-            Sleep easy — Ghosthome is on watch.
+      <div className="relative flex flex-col items-start gap-6 lg:flex-row lg:items-center lg:justify-between">
+        {/* Copy column */}
+        <div className="max-w-3xl">
+          <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200">
+            <Camera className="h-4 w-4" />
+            <span>Community street-camera network</span>
+          </div>
+
+          <h1 className="mt-4 text-4xl font-extrabold leading-tight tracking-tight text-slate-900 sm:text-5xl">
+            Safer streets through shared visibility & partner escalation
+          </h1>
+
+          <p className="mt-3 text-base text-slate-700">
+            We deploy street-level cameras across your neighbourhood, give residents route access,
+            and integrate security partners for faster, context-rich response. Less noise. More action when it counts.
           </p>
 
-          {/* CTAs */}
-          <div className="mt-6 flex flex-wrap items-center gap-4">
-            <a
-              href="/packages"
-              className="bg-brand hover:bg-brand-600 text-white font-semibold px-5 py-3 rounded-xl"
-            >
-              View Packages
-            </a>
+          <ul className="mt-4 space-y-2 text-sm text-slate-700">
+            <li className="flex items-start gap-2"><span className="mt-2 h-1.5 w-1.5 rounded-full bg-emerald-500" /> Night alerts focus (22:00–04:00) so you only get what matters</li>
+            <li className="flex items-start gap-2"><span className="mt-2 h-1.5 w-1.5 rounded-full bg-emerald-500" /> Shareable snapshots & clips for neighbours and partners</li>
+            <li className="flex items-start gap-2"><span className="mt-2 h-1.5 w-1.5 rounded-full bg-emerald-500" /> Transparent audit trail keeps everyone accountable</li>
+          </ul>
 
-            <a
-              href={waGeneric}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Chat on WhatsApp"
-              className="inline-flex items-center gap-2 rounded-xl px-5 py-3 font-semibold text-white hover:opacity-90"
-              style={{ backgroundColor: "#25D366" }}
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+            <Link
+              to="/signup"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-emerald-700 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"
             >
-              <svg viewBox="0 0 32 32" className="w-5 h-5" fill="currentColor" aria-hidden="true">
-                <path d="M19.11 17.41c-.29-.14-1.69-.83-1.95-.92-.26-.1-.45-.14-.64.14s-.73.92-.9 1.11c-.17.19-.33.21-.62.07-.29-.14-1.23-.45-2.35-1.44-.87-.76-1.45-1.7-1.62-1.99-.17-.29-.02-.44.13-.58.14-.14.29-.33.43-.5.14-.17.19-.29.29-.48.1-.19.05-.36-.02-.5-.07-.14-.64-1.55-.88-2.12-.23-.56-.47-.49-.64-.5h-.55c-.19 0-.5.07-.76.36-.26.29-1 1-1 2.43 0 1.43 1.03 2.81 1.18 3 .14.19 2.03 3.1 4.92 4.34.69.3 1.22.48 1.64.61.69.22 1.32.19 1.82.12.56-.08 1.69-.69 1.93-1.36.24-.67.24-1.26.17-1.36-.07-.1-.26-.17-.55-.31z" />
-                <path d="M26.9 5.1A13.5 13.5 0 1 0 5.1 26.9L4 30l3.2-1.06a13.5 13.5 0 0 0 19.7-19.84zM16 27.16a11.14 11.14 0 0 1-5.67-1.55l-.41-.24-2.36.78.78-2.3-.25-.42A11.18 11.18 0 1 1 27.18 16 11.16 11.16 0 0 1 16 27.16z" />
-              </svg>
-              WhatsApp us
+              Sign up for street access
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+            <a
+              href="#how-it-works"
+              className="inline-flex items-center justify-center rounded-xl border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:-translate-y-0.5 hover:bg-white hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
+            >
+              How it works
             </a>
-
-            <span className="text-sm md:text-base text-neutral-700">
-              Don’t take a chance on your security.{" "}
-              <a href="/contact" className="underline font-medium">Contact us.</a>
-            </span>
           </div>
 
-          {/* Colourful interactive bullets */}
-          <div className="mt-8">
-            <HeroBullets />
-          </div>
+          <p className="mt-3 text-xs text-slate-600">
+            POPIA-aware setup with privacy masking & signage. Access is permission-based; data retention follows community policy.
+          </p>
         </div>
 
-        {/* Right: image frame (16:9) */}
-        <div className="relative rounded-2xl border border-neutral-200 overflow-hidden">
-          <div className="aspect-video">
-            <img
-              src="/images/hero.jpg"
-              alt="Ghosthome smart CCTV in action"
-              className="w-full h-full object-cover"
-              loading="eager"
-              width="1920"
-              height="1080"
-              sizes="(min-width: 768px) 50vw, 100vw"
-            />
+        {/* Minimal emblem to balance space without noise */}
+        <div className="shrink-0">
+          <div className="grid h-28 w-28 place-items-center rounded-2xl bg-slate-50 text-slate-700 ring-1 ring-slate-200">
+            <Shield className="h-10 w-10" />
           </div>
         </div>
       </div>

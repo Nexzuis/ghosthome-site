@@ -1,7 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import {
-  PhoneCall,
   Mail,
   Shield,
   Camera,
@@ -13,79 +12,83 @@ import {
   Users,
   CheckCircle2,
   Lock,
+  Route as RouteIcon,
 } from "lucide-react";
 import { motion } from "framer-motion";
 
 /**
- * Secure Street — Charlie Zone (Moreletapark)
- * Landing page to convince residents to join Community Watch access.
- * - Plans: R99 (2 cameras, 1 account) / R149 (4 cameras, 2 accounts)
- * - Annual prepay options: R1,099 and R1,299
- * - Benefits-focused; minimal tech specifics
- * - Smart notifications 21:00–05:00 (customisable)
- * - Same visual language; no new libraries
+ * Secure Street — Community Access (Generic)
+ * Purpose: Narrative landing page that explains the street-camera concept,
+ * why it exists, and how it works — then funnels to Packages/Signup.
+ * - No zone names; generic, address-verified access.
+ * - Primary CTAs go to /signup and /packages#community-access.
+ * - Email goes to support@Ghosthome.co.za.
+ * - Night alerts aligned to 22:00–04:00.
  */
+
 export default function SecureStreet() {
   return (
     <main className="mx-auto max-w-7xl px-4 py-10">
-      {/* HERO */}
-      <section className="relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+      {/* HERO — narrative intro matching Home style */}
+      <section className="relative overflow-hidden rounded-3xl border border-emerald-100 bg-gradient-to-b from-emerald-50/60 to-white p-6 shadow-sm sm:p-8">
+        {/* soft glow accents */}
+        <div className="pointer-events-none absolute -top-24 -right-20 h-56 w-56 rounded-full bg-emerald-200/30 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-28 -left-16 h-72 w-72 rounded-full bg-emerald-100/40 blur-3xl" />
+
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          className="grid gap-8 md:grid-cols-2"
+          className="relative grid gap-8 md:grid-cols-2"
         >
           <div>
-            <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200">
-              <Shield className="h-4 w-4" />
-              Charlie Zone • Moreletapark
+            <div className="inline-flex items-center gap-2 rounded-full bg-white/70 px-3 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200 backdrop-blur">
+              <span className="h-2 w-2 rounded-full bg-emerald-500" />
+              Community Access
             </div>
 
-            <h1 className="text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">
-              Join the <span className="text-emerald-600">Community Watch</span> — see your street, stay informed
+            <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">
+              Street-camera access for residents —{" "}
+              <span className="text-emerald-600">see your route, act faster</span>
             </h1>
 
             <p className="mt-3 text-slate-700">
-              Subscribe to **street-camera access** for the roads leading to your home. Get
-              night-time person-detection alerts and live view of the cameras closest to you —
-              simple, compliant, and community-run.
+              A calm, rules-based way for neighbours to view the route cameras closest to their address.
+              You get focused night alerts (22:00–04:00) with context — while access stays permission-based
+              and POPIA-aware.
             </p>
 
             <ul className="mt-4 grid gap-2 text-sm text-slate-700">
-              <Benefit icon={<ScanEye className="h-4 w-4" />} text="Smart notifications for your selected cameras (21:00–05:00 by default — customisable on request)." />
-              <Benefit icon={<BellRing className="h-4 w-4" />} text="See what triggered the alert with a snapshot + live view, so you can act fast." />
-              <Benefit icon={<Lock className="h-4 w-4" />} text="POPIA-aware: privacy masks on private areas; resident access is limited and logged." />
-              <Benefit icon={<Users className="h-4 w-4" />} text="Be part of a local watch — support the project and your neighbours." />
+              <Benefit icon={<ScanEye className="h-4 w-4" />} text="AI flags the events that matter; you see a snapshot and can review quickly." />
+              <Benefit icon={<BellRing className="h-4 w-4" />} text="Night alerts only (22:00–04:00) by default — less noise, more signal." />
+              <Benefit icon={<Lock className="h-4 w-4" />} text="POPIA-aware: privacy masks on private areas; access is limited & activity logged." />
+              <Benefit icon={<Users className="h-4 w-4" />} text="Built with CPF leaders & security partners for faster, more coordinated response." />
             </ul>
 
             <div className="mt-5 flex flex-wrap gap-3">
-              <a
-                href="https://wa.me/27794950855"
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-white shadow-sm hover:bg-emerald-700"
-              >
-                <PhoneCall className="h-5 w-5" />
-                WhatsApp to join
-              </a>
-              <a
-                href="mailto:ian@ghosthome.co.za"
-                className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-slate-700 hover:bg-slate-50"
-              >
-                <Mail className="h-5 w-5" />
-                Email us
-              </a>
               <Link
-                to="/packages#charlie-zone"
-                className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-slate-700 hover:bg-slate-50"
+                to="/signup"
+                className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-emerald-700"
+              >
+                Get Community Access
+              </Link>
+              <Link
+                to="/packages#community-access"
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-slate-700 transition hover:-translate-y-0.5 hover:bg-slate-50"
               >
                 <Camera className="h-5 w-5" />
-                View plan breakdown
+                View plans & pricing
               </Link>
+              <a
+                href="mailto:support@Ghosthome.co.za"
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-slate-700 transition hover:-translate-y-0.5 hover:bg-slate-50"
+              >
+                <Mail className="h-5 w-5" />
+                support@Ghosthome.co.za
+              </a>
             </div>
           </div>
 
-          {/* Right: demo video + static image slot (unchanged paths) */}
+          {/* Right: demo video + static image slot (paths unchanged) */}
           <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
             {/* 16:9 video */}
             <div className="aspect-video w-full overflow-hidden rounded-xl ring-1 ring-slate-200">
@@ -118,104 +121,156 @@ export default function SecureStreet() {
                 />
               </div>
               <p className="mt-2 text-xs text-slate-600">
-                We focus views on public streets/sidewalks; privacy masks applied to private areas.
+                Views are focused on public streets/sidewalks; privacy masks applied to private areas.
               </p>
             </div>
           </div>
         </motion.div>
       </section>
 
-      {/* PLANS — quick choose (also duplicated in /packages#charlie-zone) */}
-      <section className="mt-10">
-        <h2 className="text-xl font-semibold text-slate-900">Choose your access</h2>
-        <p className="mt-1 text-sm text-slate-600">
-          Access is scoped to cameras nearest your home (approach roads / entrances & exits). Times can be customised if needed.
+      {/* WHY THIS EXISTS — give the page a reason */}
+      <section className="mt-12">
+        <h2 className="text-xl font-semibold text-slate-900">Why Community Access exists</h2>
+        <div className="mt-4 grid gap-4 md:grid-cols-3">
+          <InfoCard
+            icon={<RouteIcon className="h-5 w-5" />}
+            title="Route context matters"
+            text="Criminal movement follows streets and paths. Seeing your approach routes gives earlier warning and better decisions."
+          />
+          <InfoCard
+            icon={<BellRing className="h-5 w-5" />}
+            title="Signal over noise"
+            text="Night-hours alerts (22:00–04:00) reduce notification fatigue and increase the odds that residents act on the right events."
+          />
+          <InfoCard
+            icon={<Shield className="h-5 w-5" />}
+            title="Shared accountability"
+            text="Access is logged, clips/bookmarks are traceable, and partners engage with context. It builds trust in the process."
+          />
+        </div>
+      </section>
+
+      {/* HOW IT WORKS — consistent with Home page */}
+      <section className="mt-12">
+        <div className="relative overflow-hidden rounded-3xl border border-emerald-100 bg-gradient-to-b from-emerald-50/60 to-white p-6 sm:p-8">
+          <div className="pointer-events-none absolute -top-20 -right-16 h-56 w-56 rounded-full bg-emerald-200/30 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-24 -left-10 h-72 w-72 rounded-full bg-emerald-100/40 blur-3xl" />
+
+          <div className="relative">
+            <div className="inline-flex items-center gap-2 rounded-full bg-white/70 px-3 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200 backdrop-blur">
+              <span className="h-2 w-2 rounded-full bg-emerald-500" />
+              Street network
+            </div>
+
+            <h2 className="mt-3 text-2xl font-bold text-slate-900">How it works</h2>
+            <p className="mt-2 max-w-3xl text-slate-700">
+              Residents get permission-based access to the route cameras closest to their address. Alerts are focused on the night window.
+              CPF leaders coordinate; security partners respond with the right context.
+            </p>
+
+            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <Step
+                icon={<Camera className="h-6 w-6" />}
+                title="Detect"
+                text="Strategic poles cover routes & entrances. AI flags people/vehicles that matter."
+              />
+              <Step
+                icon={<BellRing className="h-6 w-6" />}
+                title="Alert"
+                text="You receive a night-hours alert with snapshot + short clip for quick review."
+              />
+              <Step
+                icon={<RouteIcon className="h-6 w-6" />}
+                title="Review"
+                text="Trace movement across adjoining streets via simple bookmarks."
+              />
+              <Step
+                icon={<Shield className="h-6 w-6" />}
+                title="Escalate"
+                text="One-tap call to response; partners join with clear context."
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* LIGHT PRICING CUE — don’t duplicate Packages; link through */}
+      <section className="mt-12">
+        <h2 className="text-xl font-semibold text-slate-900">Plans & eligibility</h2>
+        <p className="mt-2 max-w-3xl text-slate-700">
+          Access is address-verified and permission-based. Pricing and plan details are listed on the Street Access
+          packages page. You can start with 2 route cameras (1 user) or upgrade to 4 (2 users).
         </p>
+        <div className="mt-4 flex flex-wrap gap-3">
+          <Link
+            to="/packages#community-access"
+            className="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-emerald-700"
+          >
+            View plans & sign up
+          </Link>
+          <a
+            href="mailto:support@Ghosthome.co.za"
+            className="inline-flex items-center justify-center rounded-xl border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:-translate-y-0.5 hover:bg-white hover:shadow-sm"
+          >
+            support@Ghosthome.co.za
+          </a>
+        </div>
+        <p className="mt-3 text-xs text-slate-600">
+          Fair-use applies. WhatsApp delivery optional; email/phone alerts can be discussed with partners. Data retention follows the community policy.
+        </p>
+      </section>
 
+      {/* FAQ — light, useful context */}
+      <section className="mt-12">
+        <h2 className="text-xl font-semibold text-slate-900">Frequently asked</h2>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
-          <PlanCard
-            name="Neighbour Access — 2 Cameras"
-            monthly="R99 / month"
-            annual="R1,099 / 12 months"
-            saveNote="Save R89/year vs monthly"
-            bullets={[
-              "Live view to 2 nearby street cameras",
-              "1 account (single user)",
-              "Smart notifications 21:00–05:00 (customisable)",
-              "Resident access is limited and logged",
-            ]}
+          <FAQ
+            q="Can I watch all cameras?"
+            a="No. Access is permission-based and scoped to the route cameras nearest your address. This keeps it useful and privacy-respectful."
           />
-          <PlanCard
-            name="Route Access — 4 Cameras"
-            monthly="R149 / month"
-            annual="R1,299 / 12 months"
-            saveNote="Save R489/year vs monthly"
-            highlight
-            bullets={[
-              "Live view to 4 cameras on your routes",
-              "2 accounts (e.g., you + partner)",
-              "Smart notifications 21:00–05:00 (customisable)",
-              "Resident access is limited and logged",
-            ]}
+          <FAQ
+            q="Do I get alerts all day?"
+            a="By default, alerts are focused on night-hours (22:00–04:00). We can adjust the window for special needs on request."
           />
-        </div>
-
-        <div className="mt-4 text-xs text-slate-600">
-          Online payment is coming soon. For now, WhatsApp or email and we’ll activate your access under the community rules.
+          <FAQ
+            q="Who can get access?"
+            a="Residents in the coverage area, CPF leaders under an MoU, and vetted security partners may receive scoped access."
+          />
+          <FAQ
+            q="Are my views tracked?"
+            a="Yes. Activity is logged and incident clips/bookmarks are released only by authorised officers on lawful request."
+          />
         </div>
       </section>
 
-      {/* HOW IT HELPS — short, plain sequence */}
-      <section className="mt-10 grid gap-6 md:grid-cols-3">
-        <InfoCard
-          icon={<ScanEye className="h-5 w-5" />}
-          title="See what matters"
-          text="When a person is detected on your selected cameras at night, you get a clear notification so you can check quickly."
-        />
-        <InfoCard
-          icon={<Clock className="h-5 w-5" />}
-          title="Quiet by day"
-          text="Daytime can be quieter by default. Need different hours? We can adjust the window to suit your household."
-        />
-        <InfoCard
-          icon={<CheckCircle2 className="h-5 w-5" />}
-          title="Simple & responsible"
-          text="Resident access is scoped and logged. No public sharing. POPIA-aware setup with privacy masks and signage available."
-        />
-      </section>
-
-      {/* CTA STRIP */}
-      <section className="mt-10 rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
+      {/* CTA STRIP — final push */}
+      <section className="mt-12 rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
         <div className="flex flex-col items-start justify-between gap-3 md:flex-row md:items-center">
           <div>
             <h3 className="text-base font-semibold text-slate-900">Ready to support your street?</h3>
             <p className="mt-1 text-sm text-slate-700">
-              Join the Charlie Zone watch. We’ll confirm your nearest cameras and activate your access.
+              We’ll verify your address, confirm the nearest cameras, and activate your access under the rules.
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
-            <a
-              href="https://wa.me/27794950855"
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-white shadow-sm hover:bg-emerald-700"
-            >
-              <PhoneCall className="h-5 w-5" />
-              WhatsApp 079 495 0855
-            </a>
-            <a
-              href="mailto:ian@ghosthome.co.za"
-              className="inline-flex items-center gap-2 rounded-xl border border-emerald-300 bg-white px-4 py-2 text-emerald-700 hover:bg-emerald-50"
-            >
-              <Mail className="h-5 w-5" />
-              ian@ghosthome.co.za
-            </a>
             <Link
-              to="/packages#charlie-zone"
-              className="inline-flex items-center gap-2 rounded-xl border border-emerald-300 bg-white px-4 py-2 text-emerald-700 hover:bg-emerald-50"
+              to="/signup"
+              className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-emerald-700"
             >
-              View plan details
+              Get Community Access
             </Link>
+            <Link
+              to="/packages#community-access"
+              className="inline-flex items-center gap-2 rounded-xl border border-emerald-300 bg-white px-4 py-2 text-emerald-700 transition hover:-translate-y-0.5 hover:bg-emerald-50"
+            >
+              View plans
+            </Link>
+            <a
+              href="mailto:support@Ghosthome.co.za"
+              className="inline-flex items-center gap-2 rounded-xl border border-emerald-300 bg-white px-4 py-2 text-emerald-700 transition hover:-translate-y-0.5 hover:bg-emerald-50"
+            >
+              Contact support
+            </a>
           </div>
         </div>
       </section>
@@ -248,54 +303,27 @@ function InfoCard({ icon, title, text }) {
   );
 }
 
-function PlanCard({ name, monthly, annual, saveNote, bullets = [], highlight = false }) {
+function Step({ icon, title, text }) {
   return (
-    <div
-      className={[
-        "relative overflow-hidden rounded-2xl border p-5 shadow-sm",
-        highlight
-          ? "border-emerald-300 bg-slate-900 text-white"
-          : "border-slate-200 bg-slate-800 text-slate-50",
-      ].join(" ")}
-    >
-      {highlight && (
-        <div className="absolute right-3 top-3 rounded-full bg-emerald-500/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-200 ring-1 ring-emerald-400/40">
-          Popular
+    <div className="rounded-2xl border border-emerald-100 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+      <div className="flex items-center gap-3">
+        <div className="grid h-10 w-10 place-items-center rounded-full bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200">
+          {icon}
         </div>
-      )}
-
-      <h3 className="text-lg font-semibold">{name}</h3>
-      <div className="mt-1 text-2xl font-bold">{monthly}</div>
-      <div className="mt-0.5 text-sm opacity-90">{annual}</div>
-      <div className="text-xs opacity-80">{saveNote}</div>
-
-      <ul className="mt-3 space-y-1 text-sm">
-        {bullets.map((b) => (
-          <li key={b} className="flex items-start gap-2">
-            <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400" />
-            <span>{b}</span>
-          </li>
-        ))}
-      </ul>
-
-      <div className="mt-4 flex flex-wrap gap-2">
-        <a
-          href="https://wa.me/27794950855"
-          target="_blank"
-          rel="noreferrer"
-          className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-700"
-        >
-          <PhoneCall className="h-4 w-4" />
-          WhatsApp to activate
-        </a>
-        <a
-          href="mailto:ian@ghosthome.co.za"
-          className="inline-flex items-center gap-2 rounded-xl border border-slate-500/50 bg-transparent px-3 py-1.5 text-sm font-semibold hover:bg-white/5"
-        >
-          <Mail className="h-4 w-4" />
-          Email us
-        </a>
+        <h3 className="text-base font-semibold text-slate-900">{title}</h3>
       </div>
+      <p className="mt-3 text-sm text-slate-700">{text}</p>
     </div>
+  );
+}
+
+function FAQ({ q, a }) {
+  return (
+    <details className="rounded-2xl border border-slate-200 bg-white p-5 transition">
+      <summary className="cursor-pointer list-none text-sm font-semibold text-slate-900 transition hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300">
+        {q}
+      </summary>
+      <p className="mt-2 text-sm text-slate-600">{a}</p>
+    </details>
   );
 }

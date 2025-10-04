@@ -1,52 +1,53 @@
 import React from "react";
-import { PhoneCall, Mail, Shield, Camera, Map, Cloud, Users } from "lucide-react";
+import { Mail, Shield, Camera, Map, Cloud, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 
 /**
- * CommunityStreetPackages — UPDATED for Charlie Zone (Moreletapark)
- * - Keeps the original idea of a section appended to /packages
- * - Presents subscription access plans (R99 / R149) with clear terms
- * - Includes pilot facts (±20 poles • ±40 cameras), partners note, CTAs
- * - Back-compat anchor: has both #charlie-zone and hidden #street anchors
- * - Dark neutral card backgrounds to match Packages visual language
+ * CommunityStreetPackages — GENERIC Community Access
+ * - Generic (no zones/areas mentioned)
+ * - Primary CTAs go to /signup (no WhatsApp)
+ * - Email goes to support@Ghosthome.co.za
+ * - Back-compat anchor: keeps hidden #street
+ * - Visual style aligned with Packages/Home (neutral cards, soft tones)
  */
 
 export default function CommunityStreetPackages() {
   return (
-    <section className="mt-16" id="charlie-zone" aria-labelledby="cz-heading">
+    <section className="mt-16" id="community-access" aria-labelledby="ca-heading">
       {/* Back-compat for older links */}
       <div id="street" className="sr-only" aria-hidden="true" />
 
+      {/* Chip / label */}
       <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200">
         <Shield className="h-4 w-4" />
-        Charlie Zone • Moreletapark — Community Access
+        Community Access
       </div>
 
-      <h2 id="cz-heading" className="text-2xl font-bold tracking-tight text-slate-900">
+      <h2 id="ca-heading" className="text-2xl font-bold tracking-tight text-slate-900">
         Street Cameras — Community Access Plans
       </h2>
       <p className="mt-1 text-slate-600">
-        Pilot coverage on street corners and key entrances/exits. Residents can subscribe to view
-        cameras nearest their home at night, with simple, POPIA-aware rules.
+        Residents may request permission-based access to the nearest route cameras with focused night viewing.
+        POPIA-aware rules apply and activity is logged for accountability.
       </p>
 
-      {/* Pilot facts */}
+      {/* Facts (generic) */}
       <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Fact icon={<Map className="h-4 w-4" />} label="Area" value="Charlie Zone, Moreletapark" />
-        <Fact icon={<Camera className="h-4 w-4" />} label="Scale (pilot)" value="±20 poles • ±40 cameras" />
-        <Fact icon={<Cloud className="h-4 w-4" />} label="Platform" value="VG Cloud + NVR" />
+        <Fact icon={<Map className="h-4 w-4" />} label="Area" value="Your community (address-verified)" />
+        <Fact icon={<Camera className="h-4 w-4" />} label="Coverage" value="Street corners & key routes" />
+        <Fact icon={<Cloud className="h-4 w-4" />} label="Platform" value="VIGI Cloud + NVR" />
         <Fact icon={<Users className="h-4 w-4" />} label="Partners" value="Works with security companies" />
       </div>
 
-      {/* Plans */}
+      {/* Plans (no WhatsApp; CTAs → /signup) */}
       <div className="mt-6 grid gap-4 md:grid-cols-2">
         <Plan
           name="Neighbour Access — 2 Cameras"
           price="R99 / month"
           bullets={[
-            "Live view to 2 nearby street cameras",
+            "Live view to 2 nearby route cameras",
             "1 account (single user)",
-            "Night viewing window: 21:00–05:00",
+            "Night viewing window: 22:00–04:00",
             "No timeline export; activity is logged",
           ]}
         />
@@ -57,36 +58,33 @@ export default function CommunityStreetPackages() {
           bullets={[
             "Live view to 4 nearby/route cameras",
             "2 accounts (e.g., you + partner)",
-            "Night viewing window: 21:00–05:00",
+            "Night viewing window: 22:00–04:00",
             "No timeline export; activity is logged",
           ]}
           highlight
         />
       </div>
 
-      {/* Contact + partner note */}
+      {/* Contact + info (email → support@Ghosthome.co.za; primary CTA → /signup) */}
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <h3 className="text-base font-semibold text-slate-900">Get access or ask a question</h3>
           <p className="mt-1 text-sm text-slate-600">
-            We’ll confirm your nearest cameras and activate your account under the community rules.
+            We’ll verify your address, confirm the nearest cameras, and activate access under the community rules.
           </p>
           <div className="mt-3 flex flex-wrap gap-3">
-            <a
-              href="https://wa.me/27794950855"
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-white shadow-sm hover:bg-emerald-700"
+            <Link
+              to="/signup"
+              className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-emerald-700"
             >
-              <PhoneCall className="h-5 w-5" />
-              WhatsApp 079 495 0855
-            </a>
+              Go to Sign-up
+            </Link>
             <a
-              href="mailto:ian@ghosthome.co.za"
-              className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-slate-700 hover:bg-slate-50"
+              href="mailto:support@Ghosthome.co.za"
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-slate-700 transition hover:-translate-y-0.5 hover:bg-slate-50"
             >
               <Mail className="h-5 w-5" />
-              ian@ghosthome.co.za
+              support@Ghosthome.co.za
             </a>
           </div>
           <p className="mt-3 text-xs text-slate-600">
@@ -97,8 +95,8 @@ export default function CommunityStreetPackages() {
         <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
           <h3 className="text-base font-semibold text-slate-900">Working with security companies</h3>
           <p className="mt-1 text-sm text-slate-700">
-            We partner with local security providers — granting controlled access to street cameras to help
-            them monitor and respond. This augments their services without replacing existing alarm systems.
+            We partner with local security providers — granting controlled access to street cameras to help monitor and respond.
+            This augments their services without replacing existing alarm systems.
           </p>
           <div className="mt-3 text-xs text-slate-600">
             Access is limited, logged, and scoped to the community’s rules. Incident clips are released only by authorised officers on lawful request.
@@ -106,19 +104,19 @@ export default function CommunityStreetPackages() {
         </div>
       </div>
 
-      {/* Gentle cross-link */}
+      {/* Gentle cross-links */}
       <div className="mt-6 flex flex-wrap items-center gap-3">
         <Link
-          to="/street"
+          to="/packages#community-access"
           className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
         >
-          ← Back to Secure Street
+          View Street Plans
         </Link>
         <Link
-          to="/features"
+          to="/privacy"
           className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
         >
-          See how the system acts
+          Our privacy approach
         </Link>
       </div>
     </section>
@@ -167,25 +165,22 @@ function Plan({ name, price, bullets = [], highlight = false }) {
         ))}
       </ul>
       <div className="mt-4 flex flex-wrap gap-2">
-        <a
-          href="https://wa.me/27794950855"
-          target="_blank"
-          rel="noreferrer"
-          className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-700"
+        <Link
+          to="/signup"
+          className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-emerald-700"
         >
-          <PhoneCall className="h-4 w-4" />
-          WhatsApp to activate
-        </a>
+          Go to Sign-up
+        </Link>
         <a
-          href="mailto:ian@ghosthome.co.za"
+          href="mailto:support@Ghosthome.co.za"
           className="inline-flex items-center gap-2 rounded-xl border border-slate-500/50 bg-transparent px-3 py-1.5 text-sm font-semibold hover:bg-white/5"
         >
           <Mail className="h-4 w-4" />
-          Email us
+          Email support
         </a>
       </div>
       <p className="mt-3 text-xs opacity-80">
-        Coverage is determined by nearest vantage points. Access window and device limits apply. Terms subject to change per community rules.
+        Access windows and device limits apply. Terms subject to change per community rules.
       </p>
     </div>
   );

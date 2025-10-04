@@ -7,21 +7,24 @@ import {
   Lightbulb,
   Shield,
   BellRing,
-  Megaphone,
   Route as RouteIcon,
   Sun,
   Moon,
   Home,
   Car,
   Sparkles,
+  Camera,
+  FileText,
+  CheckCircle2,
 } from "lucide-react";
 
 /**
- * Contact (original + fun, interactive)
- * - Keeps the site's visual language (whites/greys/slates + emerald accents)
- * - No new libraries
- * - Full mailto submit from THIS file (no reliance on ContactForm.jsx)
- * - Flip cards + toggles to make it lively
+ * Contact — Street-first theme to match Home
+ * - Community Street-Camera Network as the primary focus
+ * - Smart Home Systems as a secondary offering (clearly separated)
+ * - Keeps mailto submit (no backend)
+ * - Subtle gradient accents + hover lift, same as Home/Hero styling
+ * - No new libraries beyond framer-motion (already imported)
  */
 export default function Contact() {
   // Form state
@@ -33,8 +36,8 @@ export default function Contact() {
     message: "",
   });
 
-  // Interactive toggles (informative, included in the email subject/body)
-  const [projectType, setProjectType] = useState("home"); // home | street
+  // Interactive toggles (included in email subject/body)
+  const [projectType, setProjectType] = useState("street"); // street | home
   const [power, setPower] = useState("wired"); // wired | wirefree
   const [mode, setMode] = useState("night"); // day | night
   const [contactPref, setContactPref] = useState("whatsapp"); // whatsapp | email
@@ -85,158 +88,81 @@ export default function Contact() {
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-10">
-      {/* HERO */}
-      <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="grid gap-8 md:grid-cols-2">
-          {/* LEFT: fun/interactive explainer */}
+      {/* STREET HERO — subtle emerald energy like Home */}
+      <section className="relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-10">
+        {/* soft glow accents */}
+        <div className="pointer-events-none absolute -top-24 -left-16 h-72 w-72 rounded-full bg-emerald-200/30 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-28 -right-12 h-80 w-80 rounded-full bg-emerald-100/40 blur-3xl" />
+
+        <div className="relative grid gap-8 md:grid-cols-2">
+          {/* LEFT: street-first explainer (aligned with Home copy) */}
           <div>
             <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200">
-              Let’s plan something smart
-              <Sparkles className="h-4 w-4" />
+              <Camera className="h-4 w-4" />
+              Community street-camera network
             </div>
-            <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900">
-              A security system that <span className="text-emerald-600">acts</span> — not just records
+            <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+              Safer streets through shared visibility & partner escalation
             </h1>
-            <p className="mt-2 text-slate-600">
-              Tell us what you want to secure. We’ll suggest a sensible kit and automation recipe
-              (AI detect → snapshot + chime → lights/sirens → track → escalate).
+            <p className="mt-2 text-slate-700">
+              Tell us about your street or area. Residents receive route access and focused night alerts (22:00–04:00).
+              CPF leaders coordinate. Security partners escalate with context for faster response.
             </p>
 
-            {/* Flip cards row */}
+            {/* Small credibility strip (mirrors Home tone) */}
+            <ul className="mt-4 grid gap-2 text-sm text-slate-700 sm:grid-cols-3">
+              <li className="flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                Night alerts (22:00–04:00)
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                Shareable snapshots & clips
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                Transparent audit trail
+              </li>
+            </ul>
+
+            {/* Mini how-it-works (4 steps) */}
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
-              <FlipCard
-                front={
-                  <CardFace
-                    icon={<ScanEye className="h-5 w-5" />}
-                    title="Detect"
-                    text="AI tags person/pet/vehicle."
-                    tone="emerald"
-                  />
-                }
-                back={
-                  <CardFaceBack
-                    bullets={[
-                      "Fewer false alerts via zones & line crossing",
-                      "Snapshot included in the notification",
-                    ]}
-                  />
-                }
+              <MiniStep
+                icon={<ScanEye className="h-5 w-5" />}
+                title="Detect"
+                text="Poles cover routes & entrances; AI focuses on people/vehicles."
               />
-              <FlipCard
-                front={
-                  <CardFace
-                    icon={<BellRing className="h-5 w-5" />}
-                    title="Alert"
-                    text="Snapshot + indoor chime."
-                    tone="amber"
-                  />
-                }
-                back={
-                  <CardFaceBack
-                    bullets={[
-                      "Night chime so you actually wake up",
-                      "Quiet day mode: relevant pings only",
-                    ]}
-                  />
-                }
+              <MiniStep
+                icon={<BellRing className="h-5 w-5" />}
+                title="Alert"
+                text="WhatsApp with snapshot + short clip to the right residents."
               />
-              <FlipCard
-                front={
-                  <CardFace
-                    icon={<Megaphone className="h-5 w-5" />}
-                    title="Deter"
-                    text="Lights & siren auto-fire."
-                    tone="rose"
-                  />
-                }
-                back={
-                  <CardFaceBack
-                    bullets={[
-                      "Spotlight flash on line crossing",
-                      "Siren burst on loitering",
-                    ]}
-                  />
-                }
+              <MiniStep
+                icon={<RouteIcon className="h-5 w-5" />}
+                title="Review"
+                text="Bookmarks help you trace movement across adjoining streets."
               />
-              <FlipCard
-                front={
-                  <CardFace
-                    icon={<RouteIcon className="h-5 w-5" />}
-                    title="Track"
-                    text="Pan/tilt can follow."
-                    tone="indigo"
-                  />
-                }
-                back={
-                  <CardFaceBack
-                    bullets={[
-                      "Auto-track moving targets",
-                      "Good hand-off between street cameras",
-                    ]}
-                  />
-                }
+              <MiniStep
+                icon={<Shield className="h-5 w-5" />}
+                title="Escalate"
+                text="Partners get context for prioritised, faster response."
               />
             </div>
 
-            {/* Toggles */}
-            <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <div className="grid gap-3 sm:grid-cols-2">
-                <ToggleGroup
-                  label="What are we securing?"
-                  options={[
-                    { key: "home", label: "Home", icon: <Home className="h-4 w-4" /> },
-                    { key: "street", label: "Street", icon: <Car className="h-4 w-4" /> },
-                  ]}
-                  value={projectType}
-                  onChange={setProjectType}
-                />
-                <ToggleGroup
-                  label="Power preference"
-                  options={[
-                    { key: "wired", label: "Wired" },
-                    { key: "wirefree", label: "Wire-free" },
-                  ]}
-                  value={power}
-                  onChange={setPower}
-                />
-                <ToggleGroup
-                  label="Mode you care about most"
-                  options={[
-                    { key: "day", label: "Day", icon: <Sun className="h-4 w-4" /> },
-                    { key: "night", label: "Night", icon: <Moon className="h-4 w-4" /> },
-                  ]}
-                  value={mode}
-                  onChange={setMode}
-                />
-                <ToggleGroup
-                  label="Contact preference"
-                  options={[
-                    { key: "whatsapp", label: "WhatsApp" },
-                    { key: "email", label: "Email" },
-                  ]}
-                  value={contactPref}
-                  onChange={setContactPref}
-                />
-              </div>
-              <p className="mt-2 text-xs text-slate-600">
-                These choices help us tailor the first proposal. We’ll confirm details on a quick call.
-              </p>
-            </div>
-
-            {/* Quick contacts strip */}
+            {/* Quick contacts strip (hover lift) */}
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
               <a
                 href="https://wa.me/27794950855"
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-white shadow-sm hover:bg-emerald-700"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-emerald-700 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"
               >
                 <PhoneCall className="h-5 w-5" />
                 WhatsApp: +27 79 495 0855
               </a>
               <a
                 href="mailto:ian@ghosthome.co.za"
-                className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-slate-700 hover:bg-slate-50"
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-slate-700 transition hover:-translate-y-0.5 hover:bg-white hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
               >
                 <Mail className="h-5 w-5" />
                 ian@ghosthome.co.za
@@ -248,67 +174,86 @@ export default function Contact() {
           <div className="rounded-2xl border border-slate-200 bg-white p-4">
             <form onSubmit={handleSubmit} className="space-y-3">
               <div className="grid gap-3 sm:grid-cols-2">
-                <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-slate-700">
-                    Full name *
-                  </label>
-                  <input
-                    id="name"
-                    name="name"
-                    required
-                    type="text"
-                    value={form.name}
-                    onChange={onChange}
-                    placeholder="e.g., Ian Jansen van Rensburg"
-                    className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="phone" className="block text-sm font-medium text-slate-700">
-                    Phone (WhatsApp) *
-                  </label>
-                  <input
-                    id="phone"
-                    name="phone"
-                    required
-                    type="tel"
-                    value={form.phone}
-                    onChange={onChange}
-                    placeholder="+27 79 495 0855"
-                    className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                  />
-                </div>
+                <Field
+                  id="name"
+                  label="Full name *"
+                  placeholder="e.g., Ian Jansen van Rensburg"
+                  required
+                  value={form.name}
+                  onChange={onChange}
+                />
+                <Field
+                  id="phone"
+                  label="Phone (WhatsApp) *"
+                  type="tel"
+                  placeholder="+27 79 495 0855"
+                  required
+                  value={form.phone}
+                  onChange={onChange}
+                />
               </div>
 
               <div className="grid gap-3 sm:grid-cols-2">
-                <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-slate-700">
-                    Email
-                  </label>
-                  <input
-                    id="email"
-                    name="email"
-                    type="email"
-                    value={form.email}
-                    onChange={onChange}
-                    placeholder="you@example.com"
-                    className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                <Field
+                  id="email"
+                  label="Email"
+                  type="email"
+                  placeholder="you@example.com"
+                  value={form.email}
+                  onChange={onChange}
+                />
+                <Field
+                  id="suburb"
+                  label="Suburb / Area"
+                  placeholder="e.g., Pretoria East"
+                  value={form.suburb}
+                  onChange={onChange}
+                />
+              </div>
+
+              {/* Toggles (street-first defaults) */}
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <ToggleGroup
+                    label="What are we securing?"
+                    options={[
+                      { key: "street", label: "Street", icon: <Car className="h-4 w-4" /> },
+                      { key: "home", label: "Home", icon: <Home className="h-4 w-4" /> },
+                    ]}
+                    value={projectType}
+                    onChange={setProjectType}
+                  />
+                  <ToggleGroup
+                    label="Power preference"
+                    options={[
+                      { key: "wired", label: "Wired" },
+                      { key: "wirefree", label: "Wire-free" },
+                    ]}
+                    value={power}
+                    onChange={setPower}
+                  />
+                  <ToggleGroup
+                    label="Mode you care about most"
+                    options={[
+                      { key: "day", label: "Day", icon: <Sun className="h-4 w-4" /> },
+                      { key: "night", label: "Night", icon: <Moon className="h-4 w-4" /> },
+                    ]}
+                    value={mode}
+                    onChange={setMode}
+                  />
+                  <ToggleGroup
+                    label="Contact preference"
+                    options={[
+                      { key: "whatsapp", label: "WhatsApp" },
+                      { key: "email", label: "Email" },
+                    ]}
+                    value={contactPref}
+                    onChange={setContactPref}
                   />
                 </div>
-                <div>
-                  <label htmlFor="suburb" className="block text-sm font-medium text-slate-700">
-                    Suburb / Area
-                  </label>
-                  <input
-                    id="suburb"
-                    name="suburb"
-                    type="text"
-                    value={form.suburb}
-                    onChange={onChange}
-                    placeholder="e.g., Pretoria East"
-                    className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                  />
-                </div>
+                <p className="mt-2 text-xs text-slate-600">
+                  These choices help us tailor the first proposal. We’ll confirm details on a quick call.
+                </p>
               </div>
 
               <div>
@@ -322,7 +267,7 @@ export default function Contact() {
                   rows={4}
                   value={form.message}
                   onChange={onChange}
-                  placeholder="Tell us about your home/street, wired vs wire-free, and any automations (lights, siren, chime)…"
+                  placeholder="Tell us about your street/home, key routes/entrances, night concerns, and any partner details (CPF or private security)…"
                   className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
                 />
               </div>
@@ -343,10 +288,10 @@ export default function Contact() {
                   type="submit"
                   disabled={sending}
                   className={[
-                    "inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold shadow-sm",
+                    "inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold shadow-sm transition",
                     sending
                       ? "bg-emerald-400 text-white"
-                      : "bg-emerald-600 text-white hover:bg-emerald-700",
+                      : "bg-emerald-600 text-white hover:-translate-y-0.5 hover:bg-emerald-700 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300",
                   ].join(" ")}
                   aria-busy={sending ? "true" : "false"}
                 >
@@ -358,9 +303,72 @@ export default function Contact() {
         </div>
       </section>
 
-      {/* Bottom mini features row (keeps page lively) */}
+      {/* Trust strip (mirrors Home tone) */}
       <section className="mt-10">
         <div className="grid gap-3 sm:grid-cols-3">
+          <TrustItem
+            icon={<BellRing className="h-5 w-5" />}
+            title="Night alerts only (22:00–04:00)"
+            text="Less noise, more attention when it matters."
+          />
+          <TrustItem
+            icon={<Camera className="h-5 w-5" />}
+            title="Push notifications"
+            text="Give neighbours & partners instant alerts."
+          />
+          <TrustItem
+            icon={<FileText className="h-5 w-5" />}
+            title="Transparent audit trail"
+            text="Bookmarks & exports keep everyone accountable."
+          />
+        </div>
+      </section>
+
+      {/* Divider between Street (core) and Home (side) */}
+      <div className="my-14 h-px w-full bg-slate-200" aria-hidden="true"></div>
+
+      {/* SMART HOME SYSTEMS — secondary offering, aligned with Home */}
+      <section aria-labelledby="smart-home" className="mt-6">
+        <h2 id="smart-home" className="text-xl font-semibold text-slate-900">
+          We also do Smart Home Systems
+        </h2>
+        <p className="mt-2 text-slate-600">
+          Add connected cameras and automations at home: indoor chimes, spotlights, and simple “if person → do X”
+          routines using reliable, mainstream gear.
+        </p>
+
+        <div className="mt-6 grid gap-4 sm:grid-cols-3">
+          <AddOnCard
+            icon={<Lightbulb className="h-6 w-6" />}
+            title="Automations & scenes"
+            points={[
+              "Turn on spotlights on verified person events",
+              "Trigger other camera lights/alarms automatically",
+              "Simple buttons to arm/disarm modes",
+            ]}
+          />
+          <AddOnCard
+            icon={<Camera className="h-6 w-6" />}
+            title="Home cameras & hubs"
+            points={[
+              "Reliable app control and notifications",
+              "Indoor alarm sounders (quiet day / loud night)",
+              "Privacy zones and signage support",
+            ]}
+          />
+          <AddOnCard
+            icon={<Shield className="h-6 w-6" />}
+            title="Assist & support"
+            points={[
+              "Install, configure, and fine-tune alerts",
+              "False-alarm reduction & zones",
+              "Integration with your response radio/panel",
+            ]}
+          />
+        </div>
+
+        {/* Mini features row (keeps page lively) */}
+        <div className="mt-10 grid gap-3 sm:grid-cols-3">
           <MiniCard
             icon={<Lightbulb className="h-5 w-5" />}
             title="Automate"
@@ -387,6 +395,26 @@ export default function Contact() {
 
 /* ---------- Small UI helpers (local) ---------- */
 
+function Field({ id, label, value, onChange, type = "text", placeholder, required = false }) {
+  return (
+    <div>
+      <label htmlFor={id} className="block text-sm font-medium text-slate-700">
+        {label}
+      </label>
+      <input
+        id={id}
+        name={id}
+        required={required}
+        type={type}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+      />
+    </div>
+  );
+}
+
 function ToggleGroup({ label, options, value, onChange }) {
   return (
     <div>
@@ -402,7 +430,7 @@ function ToggleGroup({ label, options, value, onChange }) {
               type="button"
               onClick={() => onChange(opt.key)}
               className={[
-                "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold ring-1",
+                "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold ring-1 transition",
                 active
                   ? "bg-emerald-600 text-white ring-emerald-600"
                   : "bg-white text-emerald-700 ring-emerald-200 hover:bg-emerald-50",
@@ -419,57 +447,52 @@ function ToggleGroup({ label, options, value, onChange }) {
   );
 }
 
-function FlipCard({ front, back }) {
+function MiniStep({ icon, title, text }) {
   return (
-    <div className="group relative h-36 w-full cursor-pointer rounded-2xl bg-transparent [perspective:1000px]">
-      <div className="relative h-full w-full transition-transform duration-500 [transform-style:preserve-3d] group-hover:[transform:rotateY(180deg)]">
-        <div
-          className="absolute inset-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm [backface-visibility:hidden]"
-          style={{ backfaceVisibility: "hidden" }}
-        >
-          {front}
-        </div>
-        <div
-          className="absolute inset-0 rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm [transform:rotateY(180deg)] [backface-visibility:hidden]"
-          style={{ transform: "rotateY(180deg)", backfaceVisibility: "hidden" }}
-        >
-          {back}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function CardFace({ icon, title, text, tone = "emerald" }) {
-  const tint = {
-    emerald: "text-emerald-600",
-    amber: "text-amber-600",
-    rose: "text-rose-600",
-    indigo: "text-indigo-600",
-    sky: "text-sky-600",
-    violet: "text-violet-600",
-  }[tone];
-
-  return (
-    <div className="flex h-full flex-col justify-between">
+    <div className="rounded-2xl border border-emerald-100 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
       <div className="flex items-center gap-2">
-        <span className={`grid h-8 w-8 place-items-center rounded-full bg-slate-100 ${tint}`}>
+        <div className="grid h-9 w-9 place-items-center rounded-full bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200">
           {icon}
-        </span>
+        </div>
         <h4 className="text-base font-semibold text-slate-900">{title}</h4>
       </div>
-      <p className="text-sm text-slate-700">{text}</p>
+      <p className="mt-2 text-sm text-slate-700">{text}</p>
     </div>
   );
 }
 
-function CardFaceBack({ bullets = [] }) {
+function AddOnCard({ icon, title, points = [] }) {
   return (
-    <ul className="flex h-full list-disc flex-col justify-center gap-2 pl-5 text-sm text-slate-700">
-      {bullets.map((b) => (
-        <li key={b}>{b}</li>
-      ))}
-    </ul>
+    <div className="rounded-2xl border border-slate-200 bg-white p-5">
+      <div className="flex items-center gap-3">
+        <div className="grid h-10 w-10 place-items-center rounded-full bg-slate-100 text-slate-700">
+          {icon}
+        </div>
+        <h3 className="text-base font-semibold text-slate-900">{title}</h3>
+      </div>
+      <ul className="mt-3 space-y-2">
+        {points.map((p) => (
+          <li key={p} className="flex items-start gap-2 text-sm text-slate-700">
+            <CheckCircle2 className="mt-0.5 h-4 w-4 text-emerald-600" />
+            <span>{p}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function TrustItem({ icon, title, text }) {
+  return (
+    <div className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4">
+      <div className="grid h-9 w-9 place-items-center rounded-full bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200">
+        {icon}
+      </div>
+      <div>
+        <p className="text-sm font-semibold text-slate-900">{title}</p>
+        <p className="text-sm text-slate-600">{text}</p>
+      </div>
+    </div>
   );
 }
 
