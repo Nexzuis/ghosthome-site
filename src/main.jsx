@@ -14,6 +14,7 @@ import Privacy from "./routes/Privacy.jsx";
 import Admin from "./routes/Admin.jsx";
 import Upload from "./routes/Upload.jsx";
 import Terms from "./routes/Terms.jsx";
+import Cancel from "./routes/Cancel.jsx";
 
 // ✅ Add the missing pages so the routes resolve in Production
 import Signup from "./routes/Signup.jsx";
@@ -34,6 +35,7 @@ const router = createBrowserRouter([
       { path: "terms", element: <Terms /> },
       { path: "admin", element: <Admin /> },
       { path: "upload", element: <Upload /> },
+      { path: "cancel", element: <Cancel /> },
 
       // ✅ New: routes that were 404ing
       { path: "signup", element: <Signup /> },

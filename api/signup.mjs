@@ -28,7 +28,9 @@ async function ensureTables(client) {
         pf_payment_id text,
         pf_payment_status text,
         pf_itn_check boolean default false,
-        created_at timestamptz not null default now()
+        pf_token text NULL,
+        created_at timestamptz not null default now(),
+        canceled_at timestamptz NULL
       );
     `);
   } catch (e) {
@@ -51,7 +53,9 @@ async function ensureTables(client) {
           pf_payment_id text,
           pf_payment_status text,
           pf_itn_check boolean default false,
-          created_at timestamptz not null default now()
+          pf_token text NULL,
+          created_at timestamptz not null default now(),
+          canceled_at timestamptz NULL
         );
       `);
     } else {

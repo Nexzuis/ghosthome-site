@@ -132,7 +132,7 @@ export default function Signup() {
           <Link to="/privacy" className="text-emerald-700 underline">
             Privacy Notice (POPIA)
           </Link>
-          . You can cancel any time.
+          . You can <a href="/cancel" className="underline font-medium">cancel</a> any time.
         </p>
 
         {/* Feature chips */}

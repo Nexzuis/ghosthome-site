@@ -25,7 +25,7 @@ export default async function handler(req, res) {
             FROM signups s
             WHERE regexp_replace(email, '\s', '', 'g') = regexp_replace($1::TEXT, '\s', '', 'g')
             OR RIGHT(regexp_replace(phone, '\s', '', 'g'), 9) = RIGHT(regexp_replace($2, '\s', '', 'g'), 9)
-            LIMIT 1
+            ORDER BY COALESCE(s.pf_payment_id::int, 0) DESC LIMIT 1
         `,
         values: [email || null, phone || null],
       });

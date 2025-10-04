@@ -43,6 +43,7 @@ export default async function handler(req, res) {
     const signupId = String(body.m_payment_id || "").trim().toLowerCase();
     const paymentId = String(body.pf_payment_id || body.m_payment_id || "").trim().toLowerCase();
     const paymentStatus = String(body.payment_status || "").trim().toLowerCase();
+    const token = String(body.token || "").trim().toLowerCase();
     const calc = md5(base).toLowerCase();
     const ok = posted === calc;
 
@@ -51,10 +52,11 @@ export default async function handler(req, res) {
         `UPDATE signups
         SET pf_payment_id = $1,
           pf_payment_status = $2,
-          pf_itn_check = $3
+          pf_itn_check = $3,
+          pf_token = $5
         WHERE id = $4`,
       values: [
-        paymentId, paymentStatus, ok, signupId
+        paymentId, paymentStatus, ok, signupId, token
       ]
     });
 
