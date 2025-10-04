@@ -16,18 +16,98 @@ export default function RootLayout() {
     }
   }, [location]);
 
-  const NavItem = ({ to, label }) => (
+  const baseItem =
+    "rounded-lg px-3 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300";
+
+  const NavItem = ({ to, label, bold = false }) => (
     <NavLink
       to={to}
       onClick={() => setOpen(false)}
       className={({ isActive }) =>
         [
-          "rounded-lg px-3 py-2 text-sm font-semibold",
-          isActive ? "bg-emerald-600 text-white" : "text-slate-700 hover:bg-slate-100",
+          baseItem,
+          bold ? "font-extrabold" : "",
+          isActive ? "bg-slate-900 text-white" : "text-slate-700 hover:bg-slate-100",
         ].join(" ")
       }
     >
       {label}
+    </NavLink>
+  );
+
+  // Primary CTA — Sign up
+  const SignUpItem = () => (
+    <NavLink
+      to="/signup"
+      onClick={() => setOpen(false)}
+      className={({ isActive }) =>
+        [
+          "rounded-xl px-3.5 py-2 text-sm font-bold transition transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300",
+          isActive
+            ? "bg-emerald-700 text-white shadow-sm"
+            : "bg-emerald-600 text-white hover:bg-emerald-700 hover:-translate-y-0.5 shadow",
+        ].join(" ")
+      }
+      aria-label="Sign up"
+    >
+      Sign up
+    </NavLink>
+  );
+
+  // Secondary CTA — Upload docs
+  const UploadItem = () => (
+    <NavLink
+      to="/upload"
+      onClick={() => setOpen(false)}
+      className={({ isActive }) =>
+        [
+          "rounded-lg px-3 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300",
+          isActive
+            ? "border border-emerald-300 bg-white text-emerald-800"
+            : "border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100",
+        ].join(" ")
+      }
+      aria-label="Upload documents"
+    >
+      Upload documents
+    </NavLink>
+  );
+
+  // Highlighted info button — Terms (soft rose, bounce on hover)
+  const TermsItem = () => (
+    <NavLink
+      to="/terms"
+      onClick={() => setOpen(false)}
+      className={({ isActive }) =>
+        [
+          "rounded-xl px-3.5 py-2 text-sm font-extrabold transition transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300",
+          isActive
+            ? "bg-rose-500 text-white shadow-sm"
+            : "bg-rose-400 text-white hover:bg-rose-500 hover:-translate-y-0.5 shadow",
+        ].join(" ")
+      }
+      aria-label="Terms"
+    >
+      Terms
+    </NavLink>
+  );
+
+  // NEW: Security Partners (blue accent, sits AFTER Upload)
+  const PartnersItem = () => (
+    <NavLink
+      to="/partners"
+      onClick={() => setOpen(false)}
+      className={({ isActive }) =>
+        [
+          "rounded-xl px-3.5 py-2 text-sm font-bold transition transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300",
+          isActive
+            ? "bg-sky-700 text-white shadow-sm"
+            : "bg-sky-600 text-white hover:bg-sky-700 hover:-translate-y-0.5 shadow",
+        ].join(" ")
+      }
+      aria-label="Security Partners"
+    >
+      Security Partners
     </NavLink>
   );
 
@@ -36,50 +116,45 @@ export default function RootLayout() {
       {/* HEADER */}
       <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
-          {/* Brand + Call */}
+          {/* Brand (bigger logo + text) */}
           <div className="flex items-center gap-3">
             <Link
               to="/"
               className="inline-flex items-center gap-2 rounded-xl px-2 py-1 text-slate-800 hover:bg-slate-100"
               aria-label="Ghosthome Home"
+              onClick={() => setOpen(false)}
             >
               <img
                 src="/logo.png"
                 onError={(e) => (e.currentTarget.src = "/logo192.png")}
                 alt="Ghosthome"
-                className="h-7 w-7 rounded-full"
+                className="h-9 w-9 rounded-full"
               />
-              <span className="text-base font-bold">Ghosthome</span>
+              <span className="text-lg font-extrabold">Ghosthome</span>
             </Link>
-
-            <a
-              href="tel:+27794950855"
-              className="inline-flex items-center rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 sm:text-sm"
-              aria-label="Call 079 495 0855"
-            >
-              Call 079 495 0855
-            </a>
           </div>
 
-          {/* Desktop nav */}
+          {/* Desktop nav — ORDERED */}
           <nav className="hidden items-center gap-2 md:flex">
+            <SignUpItem />
+            <UploadItem />
+            <PartnersItem /> {/* ← moved here, blue */}
+            <NavItem to="/street" label="Secure Street" />
+            <NavItem to="/about" label="About" />
             <NavItem to="/features" label="Features" />
             <NavItem to="/packages" label="Packages" />
-            <NavItem to="/street" label="Secure Street" />
-            <NavItem to="/signup" label="Sign up" />
-            <NavItem to="/about" label="About" />
             <NavItem to="/contact" label="Contact" />
             <NavItem to="/privacy" label="Privacy" />
-            <NavItem to="/terms" label="Terms" />
-            <NavItem to="/upload" label="Upload" />
+            <TermsItem />
           </nav>
 
-          {/* Mobile menu */}
+          {/* Mobile menu toggle */}
           <button
             type="button"
             className="grid h-10 w-10 place-items-center rounded-lg text-slate-700 hover:bg-slate-100 md:hidden"
             onClick={() => setOpen((v) => !v)}
             aria-label="Toggle menu"
+            aria-expanded={open}
           >
             {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
@@ -89,15 +164,16 @@ export default function RootLayout() {
           <div className="md:hidden">
             <nav className="mx-3 mb-3 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
               <div className="grid gap-1">
+                <SignUpItem />
+                <UploadItem />
+                <PartnersItem /> {/* ← mobile order too */}
+                <NavItem to="/street" label="Secure Street" />
+                <NavItem to="/about" label="About" />
                 <NavItem to="/features" label="Features" />
                 <NavItem to="/packages" label="Packages" />
-                <NavItem to="/street" label="Secure Street" />
-                <NavItem to="/signup" label="Sign up" />
-                <NavItem to="/about" label="About" />
                 <NavItem to="/contact" label="Contact" />
                 <NavItem to="/privacy" label="Privacy" />
-                <NavItem to="/terms" label="Terms" />
-                <NavItem to="/upload" label="Upload" />
+                <TermsItem />
               </div>
             </nav>
           </div>
@@ -118,14 +194,12 @@ export default function RootLayout() {
       {/* FOOTER */}
       <footer className="mt-16 border-t border-slate-200 bg-white">
         <div className="mx-auto max-w-7xl px-4 py-8 text-sm text-slate-600">
-          <p>
-            © 2025 Ghosthome • Security & Automation that acts, not just records • A brand of Alpha Research CC
-          </p>
+          <p>© 2025 Ghosthome • Streets in sight. Community in sync.</p>
           <p className="mt-1">
             WhatsApp: <a className="underline" href="https://wa.me/27794950855">+27 79 495 0855</a> •
             Email: <span className="underline">ian@ghosthome.co.za</span> •
             <Link to="/privacy" className="underline ml-1">Privacy (POPIA)</Link> •{" "}
-            <Link to="/terms" className="underline">Terms</Link>
+            <Link to="/terms" className="underline font-semibold">Terms</Link>
           </p>
         </div>
       </footer>
