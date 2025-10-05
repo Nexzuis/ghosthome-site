@@ -19,6 +19,7 @@ export default function Signup() {
   const [form, setForm] = useState({
     fullName: "",
     email: "",
+    email_2: "",
     phone: "",
     address1: "",
     suburb: "",
@@ -85,6 +86,7 @@ export default function Signup() {
           cycle: billing === "monthly" ? "monthly" : "annual",
           fullName: form.fullName,
           email: form.email,
+          email_2: form.email_2 || null,
           phone: form.phone,
           address1: form.address1,
           suburb: form.suburb,
@@ -94,10 +96,7 @@ export default function Signup() {
         })
       );
     } else {
-      localStorage.setItem(
-        'ghosthome_signup_id',
-        signupId
-      )
+      localStorage.setItem("ghosthome_signup_id", signupId);
     }
 
     setBusy(false);
@@ -112,7 +111,7 @@ export default function Signup() {
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-10">
-      {/* Colorful header */}
+      {/* Header */}
       <section className="relative overflow-hidden rounded-3xl border border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-sky-50 p-6">
         <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-emerald-100/70 px-3 py-1 text-xs font-semibold text-emerald-800 ring-1 ring-emerald-300">
           <Shield className="h-4 w-4" />
@@ -135,7 +134,6 @@ export default function Signup() {
           . You can <a href="/cancel" className="underline font-medium">cancel</a> any time.
         </p>
 
-        {/* Feature chips */}
         <div className="mt-4 flex flex-wrap gap-2">
           <Chip icon={<Camera className="h-4 w-4" />} text="Live-view access" tone="emerald" />
           <Chip icon={<BellRing className="h-4 w-4" />} text="Night notifications (customisable)" tone="amber" />
@@ -145,7 +143,7 @@ export default function Signup() {
       </section>
 
       <form onSubmit={onSubmit} className="mt-8 grid gap-6 lg:grid-cols-5">
-        {/* Plans column */}
+        {/* Plan column */}
         <section className="lg:col-span-2 space-y-4">
           <h2 className="text-sm font-semibold text-slate-800">Choose your plan</h2>
           <PlanCard
@@ -207,6 +205,19 @@ export default function Signup() {
             <div className="grid gap-3 sm:grid-cols-2">
               <Input label="Full name" name="fullName" value={form.fullName} onChange={handle} required />
               <Input label="Email" name="email" type="email" value={form.email} onChange={handle} required />
+
+              {/* 👇 second email appears only for "standard" plan */}
+              {plan === "standard" && (
+                <Input
+                  label="Second household email"
+                  name="email_2"
+                  type="email"
+                  value={form.email_2}
+                  onChange={handle}
+                  required
+                />
+              )}
+
               <Input label="Phone" name="phone" value={form.phone} onChange={handle} required />
               <Input label="Address line" name="address1" value={form.address1} onChange={handle} />
               <Input label="Suburb" name="suburb" value={form.suburb} onChange={handle} />
@@ -257,7 +268,7 @@ export default function Signup() {
   );
 }
 
-/* ——— UI bits with color ——— */
+/* ——— UI bits ——— */
 
 function Chip({ icon, text, tone = "emerald" }) {
   const tones = {
@@ -281,17 +292,13 @@ function PlanCard({ active, onClick, title, bullets, gradient, badge }) {
       onClick={onClick}
       className={[
         "w-full overflow-hidden rounded-2xl text-left shadow-sm ring-1 transition",
-        active
-          ? "ring-emerald-300"
-          : "ring-slate-200 hover:ring-slate-300"
+        active ? "ring-emerald-300" : "ring-slate-200 hover:ring-slate-300",
       ].join(" ")}
     >
       <div
         className={[
           "p-4",
-          active
-            ? `bg-gradient-to-r ${gradient} text-white`
-            : "bg-slate-50"
+          active ? `bg-gradient-to-r ${gradient} text-white` : "bg-slate-50",
         ].join(" ")}
       >
         <div className="flex items-center justify-between">
@@ -305,12 +312,18 @@ function PlanCard({ active, onClick, title, bullets, gradient, badge }) {
         <ul
           className={[
             "mt-2 space-y-1 text-sm",
-            active ? "text-white/90" : "text-slate-700"
+            active ? "text-white/90" : "text-slate-700",
           ].join(" ")}
         >
           {bullets.map((b) => (
             <li key={b} className="flex items-start gap-2">
-              <span className={active ? "mt-1 h-1.5 w-1.5 rounded-full bg-white" : "mt-1 h-1.5 w-1.5 rounded-full bg-emerald-600"} />
+              <span
+                className={
+                  active
+                    ? "mt-1 h-1.5 w-1.5 rounded-full bg-white"
+                    : "mt-1 h-1.5 w-1.5 rounded-full bg-emerald-600"
+                }
+              />
               {b}
             </li>
           ))}
@@ -329,7 +342,7 @@ function MiniPlan({ active, onClick, title, sub }) {
         "w-full rounded-xl border p-3 text-left transition",
         active
           ? "border-emerald-600 ring-2 ring-emerald-200"
-          : "border-slate-200 hover:border-slate-300"
+          : "border-slate-200 hover:border-slate-300",
       ].join(" ")}
     >
       <div className="text-base font-semibold text-slate-900">{title}</div>
@@ -341,7 +354,9 @@ function MiniPlan({ active, onClick, title, sub }) {
 function Input({ label, ...props }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-xs font-semibold text-slate-700">{label}</span>
+      <span className="mb-1 block text-xs font-semibold text-slate-700">
+        {label}
+      </span>
       <input
         {...props}
         className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm outline-none transition focus:border-emerald-600 focus:ring-2 focus:ring-emerald-200"

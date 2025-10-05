@@ -77,6 +77,8 @@ export default async function handler(req, res) {
       address1, suburb, city, postalCode
     } = body || {};
 
+    const email_2 = body?.email_2 || null;
+
     // Basic validation
     if (!plan || !billing || !price || !fullName || !email || !phone) {
       return res.status(400).json({ ok: false, error: "Missing required fields" });
@@ -100,15 +102,15 @@ export default async function handler(req, res) {
 
       const q = `
         insert into signups
-          (plan, billing, price, full_name, email, phone, address1, suburb, city, postal_code)
+          (plan, billing, price, full_name, email, phone, address1, suburb, city, postal_code, email_2)
         values
-          ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+          ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
         returning id
       `;
       const values = [
         String(plan), String(billing), Number(price),
         String(fullName), String(email), String(phone),
-        address1 || null, suburb || null, city || null, postalCode || null
+        address1 || null, suburb || null, city || null, postalCode || null, email_2 || null
       ];
 
       const { rows } = await client.query(q, values);
