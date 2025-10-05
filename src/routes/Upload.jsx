@@ -123,7 +123,7 @@ export default function Upload() {
           Upload your <strong>ID</strong> and <strong>Proof of Address</strong>. Supported: JPG/PNG/PDF.
         </p>
         <p className="mt-2 max-w-2xl text-slate-700">
-          You can also email your documents to: <a href="mailto:ian@ghosthome.co.za">ian@ghosthome.co.za</a><br/>
+          You can also email your documents to: <a href="mailto:support@ghosthome.co.za">support@ghosthome.co.za</a><br/>
           Please include your name and address as reference.
         </p>
       </header>
