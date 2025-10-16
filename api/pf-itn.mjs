@@ -171,7 +171,7 @@ export default async function handler(req, res) {
     });
 
     if (paymentStatus === 'complete') {
-      sendMail(signupId, db);
+      await sendMail(signupId, db);
     }
 
     req.on("error", () => res.status(200).send("OK"));
