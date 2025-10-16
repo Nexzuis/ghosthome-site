@@ -176,6 +176,7 @@ export default async function handler(req, res) {
 
     req.on("error", () => res.status(200).send("OK"));
   } catch {
+    console.log(error);
     res.status(200).send("OK");
   }
 
