@@ -1,7 +1,9 @@
+// src/routes/Packages.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
+  Filter,
   BadgeInfo,
   ChevronRight,
   X,
@@ -12,36 +14,19 @@ import {
   Check,
   Camera,
   CheckCircle2,
-  PlayCircle,
-  Map,
-  Shield,
-  Handshake,
-  Layers,
-  Target,
 } from "lucide-react";
 import PackagesTopBanner from "../components/PackagesTopBanner.jsx";
 
 /** tiny class joiner (no external deps) */
 const cx = (...xs) => xs.filter(Boolean).join(" ");
 
-/* =========================
-   THEME — align to signup
-   =========================
-   If your signup page uses a different brand colour, swap these tokens.
-*/
-const SIGNUP_SOLID_BTN = "bg-emerald-600 hover:bg-emerald-700 text-white";
-const SIGNUP_SOFT_BG   = "bg-emerald-50";
-const SIGNUP_SOFT_RING = "ring-emerald-200";
-const SIGNUP_BORDER    = "border-emerald-200";
-const SIGNUP_TEXT      = "text-emerald-700";
-
-/* ------------------------- SHARED: Street plan card ------------------------- */
+/* ------------------------- STREET-FIRST PRICING (top only) ------------------------- */
 function PriceCard({ title, price, subtitle, features = [], highlight = false, ctaLabel, to }) {
   return (
     <div
       className={[
         "rounded-2xl border p-5 transition",
-        highlight ? `${SIGNUP_BORDER} ${SIGNUP_SOFT_BG}` : "border-slate-200 bg-white",
+        highlight ? "border-emerald-300 bg-emerald-50" : "border-slate-200 bg-white",
         "hover:-translate-y-0.5 hover:shadow-md",
       ].join(" ")}
     >
@@ -60,12 +45,12 @@ function PriceCard({ title, price, subtitle, features = [], highlight = false, c
       </ul>
       <Link
         to={to}
-        className={cx(
+        className={[
           "mt-5 inline-flex w-full items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold transition focus-visible:outline-none",
           highlight
-            ? `${SIGNUP_SOLID_BTN} focus-visible:ring-2 focus-visible:ring-emerald-300`
-            : "border border-slate-300 text-slate-700 hover:bg-white focus-visible:ring-2 focus-visible:ring-slate-300"
-        )}
+            ? "bg-emerald-600 text-white hover:bg-emerald-700 focus-visible:ring-2 focus-visible:ring-emerald-300"
+            : "border border-slate-300 text-slate-700 hover:bg-white focus-visible:ring-2 focus-visible:ring-slate-300",
+        ].join(" ")}
       >
         {ctaLabel}
       </Link>
@@ -73,7 +58,57 @@ function PriceCard({ title, price, subtitle, features = [], highlight = false, c
   );
 }
 
-/* ------------------------- HOME GRID DATA (unchanged) ------------------------- */
+/* ------------------------- MEDIA STRIP (fixed 3rd tile) ------------------------- */
+function MediaStrip() {
+  return (
+    <section className="mt-8 grid gap-4 sm:grid-cols-3">
+      {/* 1) Route coverage */}
+      <MediaTile
+        src="/images/packages/route-coverage.jpg"
+        alt="Illustration of route coverage across street corners"
+        title="Route coverage"
+        caption="Poles watch entrances, crossings & cut-throughs."
+      />
+      {/* 2) Night alerts */}
+      <MediaTile
+        src="/images/packages/night-alerts.jpg"
+        alt="Example night alert with snapshot"
+        title="Night alerts (23:00–04:00)"
+        caption="Focused notifications to reduce noise."
+      />
+      {/* 3) Quick clips & live view — now using person detection, with fallback */}
+      <MediaTile
+        src="/images/person-detection.jpg"
+        fallback="/images/secure-street-overview.jpg"
+        alt="AI person detection snapshot"
+        title="Quick visual clips & live view"
+        caption="See the snapshot, then jump to live immediately."
+      />
+    </section>
+  );
+}
+
+function MediaTile({ src, fallback, alt, title, caption }) {
+  const onError = (e) => {
+    if (fallback && e.currentTarget.dataset.fallback !== "done") {
+      e.currentTarget.src = fallback;
+      e.currentTarget.dataset.fallback = "done";
+    }
+  };
+  return (
+    <figure className="rounded-2xl border border-slate-200 bg-white p-3">
+      <div className="aspect-video w-full overflow-hidden rounded-xl ring-1 ring-slate-200">
+        <img src={src} alt={alt} onError={onError} className="h-full w-full object-cover" loading="lazy" />
+      </div>
+      <figcaption className="mt-2">
+        <div className="text-sm font-semibold text-slate-900">{title}</div>
+        <div className="text-xs text-slate-600">{caption}</div>
+      </figcaption>
+    </figure>
+  );
+}
+
+/* ------------------------- HOME GRID DATA (secondary) ------------------------- */
 const PACKAGES = [
   {
     id: "pkg-doorbell",
@@ -310,178 +345,121 @@ export default function Packages() {
       <div id="packages-top" className="mx-auto max-w-7xl px-4 py-8">
         {/* Title row */}
         <div className="mb-6 flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-slate-900">Street Access, Partner Packages & Home Systems</h1>
+          <h1 className="text-2xl font-bold text-slate-900">Street Access & Home Systems</h1>
           <div className="hidden items-center gap-2 text-slate-500 sm:flex">
             <Camera className="h-4 w-4 text-emerald-600" />
-            <span className="text-sm">Choose what fits your need</span>
+            <span className="text-sm">Street-first packages</span>
           </div>
         </div>
 
-        {/* quick anchors for clarity */}
-        <div className="mb-6 flex flex-wrap gap-2">
-          <a href="#track-street" className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">Street Access</a>
-          <a href="#track-partners" className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-1.5 text-sm font-semibold text-sky-700 hover:bg-sky-100">Security Partner Packages</a>
-          <a href="#track-home" className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-sm font-semibold text-amber-700 hover:bg-amber-100">Home Systems</a>
+        {/* Handy anchors */}
+        <div className="mb-4 flex flex-wrap gap-2">
+          <a
+            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            href="#packages-top"
+          >
+            ↑ Back to top
+          </a>
+          <a
+            href="#community-access"
+            className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-sm font-semibold text-emerald-700 hover:bg-emerald-100"
+          >
+            Jump to Community Access
+          </a>
         </div>
 
-        {/* ===================== TRACK 1: STREET ACCESS (Residents) ===================== */}
-        <section id="track-street" className="relative overflow-hidden rounded-3xl border border-emerald-100 bg-gradient-to-b from-emerald-50/60 to-white p-6 sm:p-8">
-          {/* soft accents */}
-          <div className="pointer-events-none absolute -top-20 -right-16 h-56 w-56 rounded-full bg-emerald-200/30 blur-3xl" />
-          <div className="pointer-events-none absolute -bottom-24 -left-10 h-72 w-72 rounded-full bg-emerald-100/40 blur-3xl" />
+        {/* Top banner */}
+        <PackagesTopBanner />
 
-          <div className="relative">
-            <div className={cx("inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold backdrop-blur ring-1", "bg-white/90", SIGNUP_TEXT, "ring-emerald-200")}>
-              🟩 Street Access (Residents)
-            </div>
-            <h2 className="mt-3 text-2xl font-bold text-slate-900">Live view on your route, focused night alerts</h2>
-            <p className="mt-2 max-w-3xl text-slate-700">
-              Residents get <span className="font-semibold">permission-based live view</span> on nearby street cameras.
-              Alerts are focused on <span className="font-semibold">23:00–04:00</span> to reduce noise.{" "}
-              <span className="font-semibold">Vetted CPF patrollers</span> may receive clip notifications. Security partners escalate with context.
-            </p>
+        {/* VISUAL MEDIA STRIP (fixed third tile) */}
+        <MediaStrip />
 
-            {/* small media strip (compact visuals) */}
-            <div className="mt-5 grid gap-3 sm:grid-cols-3">
-              <div className="aspect-video w-full overflow-hidden rounded-xl ring-1 ring-slate-200">
-                <img
-                  src="/images/secure-street-overview.jpg"
-                  alt="Street-pole camera coverage near approaches"
-                  className="h-full w-full object-cover"
-                  loading="lazy"
+        {/* STREET ACCESS PLANS — SINGLE RENDER ONLY (aligned to Home gradient style) */}
+        <section id="community-access" aria-labelledby="street-plans" className="mt-8">
+          <div className="relative overflow-hidden rounded-3xl border border-emerald-100 bg-gradient-to-b from-emerald-50/60 to-white p-6 sm:p-8">
+            {/* soft glow accents to match Home */}
+            <div className="pointer-events-none absolute -top-20 -right-16 h-56 w-56 rounded-full bg-emerald-200/30 blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-24 -left-10 h-72 w-72 rounded-full bg-emerald-100/40 blur-3xl" />
+
+            <div className="relative">
+              <div className="inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200 backdrop-blur">
+                <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                Street network
+              </div>
+              <h2 id="street-plans" className="mt-3 text-2xl font-bold text-slate-900">
+                Street Access Plans
+              </h2>
+              <p className="mt-2 max-w-3xl text-slate-700">
+                Residents get route access and focused night alerts (23:00–04:00). CPF leaders coordinate, and
+                security partners escalate with context for faster response.
+              </p>
+
+              <div className="mt-6 grid gap-4 sm:grid-cols-3">
+                <PriceCard
+                  title="Neighbour Plan"
+                  price="R99"
+                  subtitle="/month"
+                  features={["2 route cameras", "1 user account", "Night alerts (23:00–04:00)"]}
+                  ctaLabel="Sign up"
+                  to="/signup"
+                />
+                <PriceCard
+                  title="Street Plan"
+                  price="R149"
+                  subtitle="/month"
+                  features={["4 route cameras", "2 user accounts", "Night alerts (23:00–04:00)"]}
+                  highlight
+                  ctaLabel="Sign up"
+                  to="/signup"
+                />
+                <PriceCard
+                  title="Security Partner"
+                  price="POA"
+                  subtitle=""
+                  features={["Context-rich call-outs", "Evidence & audit support", "SOP alignment"]}
+                  ctaLabel="Talk to us"
+                  to="/contact"
                 />
               </div>
-              <div className="aspect-video w-full overflow-hidden rounded-xl ring-1 ring-slate-200">
-                <video
-                  src="/videos/detection-demo.mp4"
-                  muted
-                  playsInline
-                  loop
-                  autoPlay
-                  className="h-full w-full object-cover"
-                />
-              </div>
-              <div className="aspect-video w-full overflow-hidden rounded-xl ring-1 ring-slate-200">
-                <img
-                  src="/images/street-chip-strip.jpg"
-                  alt="Quick visual chips showing alert and live view concepts"
-                  className="h-full w-full object-cover"
-                  loading="lazy"
-                />
-              </div>
-            </div>
-            <p className="mt-2 flex items-center gap-2 text-xs text-slate-500">
-              <PlayCircle className="h-4 w-4" /> Detection demo is muted. Residents see live view during the night window.
-            </p>
 
-            <div className="mt-6 grid gap-4 sm:grid-cols-3">
-              <PriceCard
-                title="Neighbour Plan"
-                price="R99"
-                subtitle="/month"
-                features={["2 route cameras", "1 user account", "Night focus (23:00–04:00) — live view"]}
-                ctaLabel="Sign up"
-                to="/signup"
-              />
-              <PriceCard
-                title="Street Plan"
-                price="R149"
-                subtitle="/month"
-                features={["4 route cameras", "2 user accounts", "Night focus (23:00–04:00) — live view"]}
-                highlight
-                ctaLabel="Sign up"
-                to="/signup"
-              />
-              <div className="rounded-2xl border border-slate-200 bg-white p-5">
-                <h3 className="text-base font-semibold text-slate-900">Need something else?</h3>
-                <p className="mt-2 text-sm text-slate-700">We can help you choose the right access based on your address and routes.</p>
-                <div className="mt-4 flex gap-2">
-                  <Link to="/signup" className={cx("inline-flex items-center rounded-xl px-4 py-2 text-sm font-semibold shadow-sm transition", SIGNUP_SOLID_BTN)}>
-                    Sign up
-                    <ChevronRight className="ml-1 h-4 w-4" />
+              {/* INFO STRIP — sign up only + info@ */}
+              <div className="mt-6 rounded-xl border border-slate-200 bg-white p-4">
+                <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
+                  <p className="text-sm text-slate-700">
+                    To get access, please{" "}
+                    <Link to="/signup" className="font-semibold text-emerald-700 hover:underline">
+                      sign up
+                    </Link>
+                    . For general questions, email{" "}
+                    <a href="mailto:info@ghosthome.co.za" className="font-semibold text-emerald-700 hover:underline">
+                      info@ghosthome.co.za
+                    </a>.
+                  </p>
+                  <Link
+                    to="/signup"
+                    className="inline-flex items-center justify-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+                  >
+                    Sign up to request access
                   </Link>
-                  <a href="mailto:info@ghosthome.co.za" className="inline-flex items-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50">
-                    info@ghosthome.co.za
-                  </a>
                 </div>
+                <p className="mt-2 text-xs text-slate-500">
+                  Access is permission-based and address-verified. Data retention follows the community policy. WhatsApp delivery preferred; Telegram optional.
+                </p>
               </div>
             </div>
           </div>
         </section>
 
-        {/* HARD SEPARATOR – removes “one big bundle” feeling */}
-        <div className="my-10 h-0.5 w-full bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
+        {/* Divider */}
+        <div className="my-12 h-px w-full bg-slate-200" aria-hidden="true"></div>
 
-        {/* ===================== TRACK 2: SECURITY PARTNER PACKAGES ===================== */}
-        <section id="track-partners" className="rounded-3xl border border-sky-200 bg-sky-50 p-6 sm:p-8">
-          <div className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 text-xs font-semibold text-sky-700 ring-1 ring-sky-200">
-            🟦 Security Partner Packages
-          </div>
-          <h2 className="mt-3 text-2xl font-bold text-slate-900">Partnership model — built for real operations</h2>
-          <p className="mt-2 max-w-3xl text-slate-700">
-            We provide a managed community street network and an <span className="font-semibold">elevated analytics workspace on request</span>.
-            Access is role-based, logged and POPIA-aware. Choose the level of collaboration that fits your area strategy.
-          </p>
-
-          {/* three partner tiers — NO PRICING, no camera counts, no platform brand names */}
-          <div className="mt-6 grid gap-4 lg:grid-cols-3">
-            <PartnerTier
-              icon={<Shield className="h-5 w-5 text-sky-700" />}
-              title="Operational Access"
-              bullets={[
-                "Scoped control-room access to live street feeds",
-                "AI event stream for people/vehicles at night (23:00–04:00 focus)",
-                "Bookmarking & incident tagging (audited)",
-              ]}
-              footnote="For partners needing clear, logged access to support response and oversight."
-            />
-            <PartnerTier
-              icon={<Handshake className="h-5 w-5 text-sky-700" />}
-              title="Co-Branding Partnership"
-              bullets={[
-                "Everything in Operational Access",
-                "Co-branded community signage & comms",
-                "Shared alert presence in resident channels (where agreed)",
-              ]}
-              footnote="Great for visible collaboration with HOAs/CPFs while keeping roles clear."
-            />
-            <PartnerTier
-              icon={<Layers className="h-5 w-5 text-sky-700" />}
-              title="Enhanced Add-On"
-              bullets={[
-                "Everything in Co-Branding Partnership",
-                "Limited, watermarked clip exports (logged by role)",
-                "Monthly incident summaries & heatmaps for SLAs",
-              ]}
-              footnote="For partners who report to clients and need clean audit packs."
-            />
-          </div>
-
-          <div className="mt-6 flex flex-wrap gap-3">
-            <Link to="/partners" className="inline-flex items-center rounded-lg bg-sky-700 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-sky-800">
-              See partner details
-            </Link>
-            <Link to="/contact" className="inline-flex items-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50">
-              Request partner access
-            </Link>
-          </div>
-
-          <p className="mt-2 text-xs text-slate-600">
-            Privacy by design: no biometric identification; privacy masks; strict export controls; full access logs.
-          </p>
-        </section>
-
-        {/* HARD SEPARATOR */}
-        <div className="my-10 h-0.5 w-full bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
-
-        {/* ===================== TRACK 3: HOME SYSTEMS ===================== */}
-        <section id="track-home" aria-labelledby="home-grid" className="rounded-3xl border border-amber-200 bg-amber-50 p-6 sm:p-8">
-          <div className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 text-xs font-semibold text-amber-700 ring-1 ring-amber-200">
-            🟨 Home & Property Systems
-          </div>
-          <h2 id="home-grid" className="mt-3 text-2xl font-bold text-slate-900">Reliable kits with AI & deterrence</h2>
-          <p className="mt-1 text-slate-700">
-            Choose wired or wire-free to suit your property. Add indoor chime for night alerts and simple “if person → do X” automations.
+        {/* HOME & PROPERTY SYSTEMS (only home packages below this point) */}
+        <section aria-labelledby="home-grid">
+          <h2 id="home-grid" className="text-xl font-semibold text-slate-900">
+            Home & Property Systems
+          </h2>
+          <p className="mt-1 text-slate-600">
+            Reliable home kits with AI detection, deterrence and simple automations. Choose wired or wire-free to suit your property.
           </p>
 
           {/* Filters */}
@@ -492,7 +470,7 @@ export default function Packages() {
                 className={cx(
                   "rounded-full border px-3 py-1 text-sm transition",
                   selectedTags.length === 0
-                    ? `${SIGNUP_BORDER} ${SIGNUP_SOFT_BG} ${SIGNUP_TEXT} border ${SIGNUP_BORDER}`
+                    ? "border-emerald-600 bg-emerald-50 text-emerald-700"
                     : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
                 )}
               >
@@ -507,7 +485,7 @@ export default function Packages() {
                     className={cx(
                       "rounded-full border px-3 py-1 text-sm transition",
                       active
-                        ? `${SIGNUP_BORDER} ${SIGNUP_SOFT_BG} ${SIGNUP_TEXT} border ${SIGNUP_BORDER}`
+                        ? "border-emerald-600 bg-emerald-50 text-emerald-700"
                         : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
                     )}
                     aria-pressed={active}
@@ -538,7 +516,7 @@ export default function Packages() {
                   className={cx(
                     "rounded-lg px-3 py-1.5 text-sm font-semibold transition",
                     compareSel.length === 2
-                      ? SIGNUP_SOLID_BTN
+                      ? "bg-emerald-600 text-white hover:bg-emerald-700"
                       : "bg-slate-100 text-slate-400 cursor-not-allowed"
                   )}
                 >
@@ -620,7 +598,7 @@ export default function Packages() {
                     className={cx(
                       "inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm transition",
                       compareSel.includes(pkg.id)
-                        ? `${SIGNUP_SOFT_BG} ${SIGNUP_TEXT} border ${SIGNUP_BORDER}`
+                        ? "border-emerald-300 bg-emerald-50 text-emerald-800"
                         : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
                     )}
                     aria-pressed={compareSel.includes(pkg.id)}
@@ -631,7 +609,7 @@ export default function Packages() {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => openDrawer(pkg)}
-                      className={cx("inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition", SIGNUP_SOLID_BTN)}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-emerald-700"
                     >
                       Show details
                       <ChevronRight className="h-4 w-4" />
@@ -685,7 +663,7 @@ export default function Packages() {
                           next.searchParams.set("pkg", p.id);
                           window.history.replaceState({}, "", next);
                         }}
-                        className={cx("inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition", SIGNUP_SOLID_BTN)}
+                        className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1.5 text-xs font-semibold text-white transition hover:-translate-y-0.5 hover:bg-emerald-700"
                       >
                         View details
                         <ChevronRight className="h-3.5 w-3.5" />
@@ -835,7 +813,7 @@ function DetailDrawer({ open, pkg, onClose }) {
                 href={`https://wa.me/27794950855?text=${encodeURIComponent(`Hi Ghosthome 👋 I'm looking at: ${pkg.title}`)}`}
                 target="_blank"
                 rel="noreferrer"
-                className={cx("inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold", SIGNUP_SOLID_BTN)}
+                className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
               >
                 <MessageSquare className="h-4 w-4" />
                 Chat on WhatsApp
@@ -859,27 +837,5 @@ function DetailDrawer({ open, pkg, onClose }) {
         </motion.aside>
       </motion.div>
     </AnimatePresence>
-  );
-}
-
-/* ---------------------------- small local components ---------------------------- */
-
-function PartnerTier({ icon, title, bullets = [], footnote }) {
-  return (
-    <div className="rounded-2xl border border-sky-100 bg-white p-5 shadow-sm">
-      <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-800 ring-1 ring-sky-100">
-        {icon}
-        {title}
-      </div>
-      <ul className="space-y-2 text-sm text-slate-700">
-        {bullets.map((b) => (
-          <li key={b} className="flex items-start gap-2">
-            <span className="mt-1 inline-block h-1.5 w-1.5 rounded-full bg-sky-500" />
-            <span>{b}</span>
-          </li>
-        ))}
-      </ul>
-      {footnote ? <p className="mt-3 text-xs text-slate-500">{footnote}</p> : null}
-    </div>
   );
 }
