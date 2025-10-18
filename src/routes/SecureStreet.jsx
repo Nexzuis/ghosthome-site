@@ -8,7 +8,6 @@ import {
   ScanEye,
   Map,
   PlayCircle,
-  Clock,
   Users,
   CheckCircle2,
   Lock,
@@ -17,140 +16,152 @@ import {
 import { motion } from "framer-motion";
 
 /**
- * Secure Street — Community Access (Generic)
- * Purpose: Narrative landing page that explains the street-camera concept,
- * why it exists, and how it works — then funnels to Packages/Signup.
- * - No zone names; generic, address-verified access.
- * - Primary CTAs go to /signup and /packages#community-access.
- * - Email goes to support@Ghosthome.co.za.
- * - Night alerts aligned to 22:00–04:00.
+ * Secure Street — Community Access
+ * - Residents: live view of nearest route cameras; scoped, logged access.
+ * - Night focus: 23:00–04:00.
+ * - Alerts: CPF patrollers may receive clip notifications; residents use live view + event banners in-app.
+ * - Keep three media placeholders (video + two images) in a unified style.
  */
 
 export default function SecureStreet() {
   return (
     <main className="mx-auto max-w-7xl px-4 py-10">
-      {/* HERO — narrative intro matching Home style */}
+      {/* HERO */}
       <section className="relative overflow-hidden rounded-3xl border border-emerald-100 bg-gradient-to-b from-emerald-50/60 to-white p-6 shadow-sm sm:p-8">
-        {/* soft glow accents */}
         <div className="pointer-events-none absolute -top-24 -right-20 h-56 w-56 rounded-full bg-emerald-200/30 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-28 -left-16 h-72 w-72 rounded-full bg-emerald-100/40 blur-3xl" />
 
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          className="relative grid gap-8 md:grid-cols-2"
+          className="relative"
         >
-          <div>
-            <div className="inline-flex items-center gap-2 rounded-full bg-white/70 px-3 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200 backdrop-blur">
-              <span className="h-2 w-2 rounded-full bg-emerald-500" />
-              Community Access
-            </div>
-
-            <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">
-              Street-camera access for residents —{" "}
-              <span className="text-emerald-600">see your route, act faster</span>
-            </h1>
-
-            <p className="mt-3 text-slate-700">
-              A calm, rules-based way for neighbours to view the route cameras closest to their address.
-              You get focused night alerts (22:00–04:00) with context — while access stays permission-based
-              and POPIA-aware.
-            </p>
-
-            <ul className="mt-4 grid gap-2 text-sm text-slate-700">
-              <Benefit icon={<ScanEye className="h-4 w-4" />} text="AI flags the events that matter; you see a snapshot and can review quickly." />
-              <Benefit icon={<BellRing className="h-4 w-4" />} text="Night alerts only (22:00–04:00) by default — less noise, more signal." />
-              <Benefit icon={<Lock className="h-4 w-4" />} text="POPIA-aware: privacy masks on private areas; access is limited & activity logged." />
-              <Benefit icon={<Users className="h-4 w-4" />} text="Built with CPF leaders & security partners for faster, more coordinated response." />
-            </ul>
-
-            <div className="mt-5 flex flex-wrap gap-3">
-              <Link
-                to="/signup"
-                className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-emerald-700"
-              >
-                Get Community Access
-              </Link>
-              <Link
-                to="/packages#community-access"
-                className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-slate-700 transition hover:-translate-y-0.5 hover:bg-slate-50"
-              >
-                <Camera className="h-5 w-5" />
-                View plans & pricing
-              </Link>
-              <a
-                href="mailto:support@Ghosthome.co.za"
-                className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-slate-700 transition hover:-translate-y-0.5 hover:bg-slate-50"
-              >
-                <Mail className="h-5 w-5" />
-                support@Ghosthome.co.za
-              </a>
-            </div>
+          <div className="inline-flex items-center gap-2 rounded-full bg-white/70 px-3 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200 backdrop-blur">
+            <span className="h-2 w-2 rounded-full bg-emerald-500" />
+            Community Access
           </div>
 
-          {/* Right: demo video + static image slot (paths unchanged) */}
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
-            {/* 16:9 video */}
-            <div className="aspect-video w-full overflow-hidden rounded-xl ring-1 ring-slate-200">
-              <video
-                src="/videos/detection-demo.mp4"
-                muted
-                playsInline
-                loop
-                autoPlay
-                className="h-full w-full object-cover"
-              />
-            </div>
-            <div className="mt-2 flex items-center gap-2 text-xs text-slate-600">
-              <PlayCircle className="h-4 w-4" />
-              Live detection demo (autoplay, muted).
-            </div>
+          <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">
+            Street-camera access for residents —{" "}
+            <span className="text-emerald-600">see your route, act faster</span>
+          </h1>
 
-            {/* Static image slot under the video */}
-            <div className="mt-4">
-              <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-600">
-                <Map className="h-4 w-4" />
-                Example street coverage (illustrative)
-              </div>
-              <div className="aspect-video w-full overflow-hidden rounded-xl bg-white ring-1 ring-slate-200">
-                <img
-                  src="/images/secure-street-overview.jpg"
-                  alt="Illustrative diagram of street-pole camera coverage near home approaches"
-                  className="h-full w-full object-cover"
-                  loading="lazy"
-                />
-              </div>
-              <p className="mt-2 text-xs text-slate-600">
-                Views are focused on public streets/sidewalks; privacy masks applied to private areas.
-              </p>
-            </div>
+          <p className="mt-3 max-w-3xl text-slate-700">
+            A calm, rules-based way for neighbours to view the{" "}
+            <span className="font-semibold">route cameras closest to their address</span>. The system focuses on
+            <span className="font-semibold"> 23:00–04:00</span> so you only see what matters. Access is permission-based and
+            POPIA-aware.
+          </p>
+
+          <ul className="mt-4 grid gap-2 text-sm text-slate-700 sm:grid-cols-2">
+            <Benefit
+              icon={<ScanEye className="h-4 w-4" />}
+              text="AI flags the right activity; you can open the app to view it live with context."
+            />
+            <Benefit
+              icon={<BellRing className="h-4 w-4" />}
+              text="Night focus: 23:00–04:00. CPF patrollers may receive clip notifications; residents use live view."
+            />
+            <Benefit
+              icon={<Lock className="h-4 w-4" />}
+              text="POPIA-aware: privacy masks where required; access is scoped & logged with audit trails."
+            />
+            <Benefit
+              icon={<Users className="h-4 w-4" />}
+              text="Built with CPF leaders & security partners for faster, coordinated response."
+            />
+          </ul>
+
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Link
+              to="/signup"
+              className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-emerald-700"
+            >
+              Get Community Access
+            </Link>
+            <Link
+              to="/packages#community-access"
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:-translate-y-0.5 hover:bg-slate-50"
+            >
+              <Camera className="h-5 w-5" />
+              View plans & pricing
+            </Link>
+            <a
+              href="mailto:support@Ghosthome.co.za"
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:-translate-y-0.5 hover:bg-slate-50"
+            >
+              <Mail className="h-5 w-5" />
+              support@Ghosthome.co.za
+            </a>
           </div>
         </motion.div>
       </section>
 
-      {/* WHY THIS EXISTS — give the page a reason */}
+      {/* MEDIA STRIP — 3 matching cards (video + two images) */}
+      <section className="mt-10 grid gap-4 sm:grid-cols-3">
+        <MediaCard
+          kind="video"
+          label="Ghosthome camera demo"
+          note=""
+        >
+          <video
+            src="/videos/detection-demo.mp4"
+            muted
+            playsInline
+            loop
+            autoPlay
+            className="h-full w-full object-cover"
+          />
+        </MediaCard>
+
+        <MediaCard
+          label="Street person detection"
+          note=""
+        >
+          <img
+            src="/images/secure-street-overview.jpg"
+            alt="Illustrative diagram of street-pole camera coverage near home approaches"
+            className="h-full w-full object-cover"
+            loading="lazy"
+          />
+        </MediaCard>
+
+        <MediaCard
+          label="Simple App intergration for residents"
+          note=""
+        >
+          <img
+            src="/images/secure-street-ui.jpg"
+            alt="Example resident live view UI"
+            className="h-full w-full object-cover"
+            loading="lazy"
+          />
+        </MediaCard>
+      </section>
+
+      {/* WHY THIS EXISTS */}
       <section className="mt-12">
         <h2 className="text-xl font-semibold text-slate-900">Why Community Access exists</h2>
         <div className="mt-4 grid gap-4 md:grid-cols-3">
           <InfoCard
             icon={<RouteIcon className="h-5 w-5" />}
             title="Route context matters"
-            text="Criminal movement follows streets and paths. Seeing your approach routes gives earlier warning and better decisions."
+            text="Criminal movement follows streets and paths. Seeing your approach routes gives earlier warning and cleaner decisions."
           />
           <InfoCard
             icon={<BellRing className="h-5 w-5" />}
             title="Signal over noise"
-            text="Night-hours alerts (22:00–04:00) reduce notification fatigue and increase the odds that residents act on the right events."
+            text="A focused night window (23:00–04:00) reduces alert fatigue and keeps attention for what matters."
           />
           <InfoCard
             icon={<Shield className="h-5 w-5" />}
             title="Shared accountability"
-            text="Access is logged, clips/bookmarks are traceable, and partners engage with context. It builds trust in the process."
+            text="Access is logged and exports are controlled. Partners engage with context, building trust across the street."
           />
         </div>
       </section>
 
-      {/* HOW IT WORKS — consistent with Home page */}
+      {/* HOW IT WORKS */}
       <section className="mt-12">
         <div className="relative overflow-hidden rounded-3xl border border-emerald-100 bg-gradient-to-b from-emerald-50/60 to-white p-6 sm:p-8">
           <div className="pointer-events-none absolute -top-20 -right-16 h-56 w-56 rounded-full bg-emerald-200/30 blur-3xl" />
@@ -164,8 +175,7 @@ export default function SecureStreet() {
 
             <h2 className="mt-3 text-2xl font-bold text-slate-900">How it works</h2>
             <p className="mt-2 max-w-3xl text-slate-700">
-              Residents get permission-based access to the route cameras closest to their address. Alerts are focused on the night window.
-              CPF leaders coordinate; security partners respond with the right context.
+              Residents get permission-based live view of the route cameras closest to their address. CPF leaders coordinate; security partners respond with context. It’s a simple, reliable, and auditable way to support your street at night.
             </p>
 
             <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -176,30 +186,29 @@ export default function SecureStreet() {
               />
               <Step
                 icon={<BellRing className="h-6 w-6" />}
-                title="Alert"
-                text="You receive a night-hours alert with snapshot + short clip for quick review."
+                title="Focus"
+                text="Night window 23:00–04:00. Residents use live view; CPF patrollers may receive clip notifications."
               />
               <Step
                 icon={<RouteIcon className="h-6 w-6" />}
                 title="Review"
-                text="Trace movement across adjoining streets via simple bookmarks."
+                text="Quickly check your approach routes and share context into CPF/HOA channels."
               />
               <Step
                 icon={<Shield className="h-6 w-6" />}
                 title="Escalate"
-                text="One-tap call to response; partners join with clear context."
+                text="One-tap call to response; partners align with the community SOP."
               />
             </div>
           </div>
         </div>
       </section>
 
-      {/* LIGHT PRICING CUE — don’t duplicate Packages; link through */}
+      {/* LIGHT PRICING CUE */}
       <section className="mt-12">
         <h2 className="text-xl font-semibold text-slate-900">Plans & eligibility</h2>
         <p className="mt-2 max-w-3xl text-slate-700">
-          Access is address-verified and permission-based. Pricing and plan details are listed on the Street Access
-          packages page. You can start with 2 route cameras (1 user) or upgrade to 4 (2 users).
+          Access is address-verified and permission-based. Start with two nearby route cameras (1 user) or upgrade to four (2 users) — all scoped to your street network.
         </p>
         <div className="mt-4 flex flex-wrap gap-3">
           <Link
@@ -216,34 +225,34 @@ export default function SecureStreet() {
           </a>
         </div>
         <p className="mt-3 text-xs text-slate-600">
-          Fair-use applies. WhatsApp delivery optional; email/phone alerts can be discussed with partners. Data retention follows the community policy.
+          Fair-use applies. Access remains scoped to your address; audit logs and privacy signage support are provided.
         </p>
       </section>
 
-      {/* FAQ — light, useful context */}
+      {/* FAQ — concise & resident-friendly */}
       <section className="mt-12">
         <h2 className="text-xl font-semibold text-slate-900">Frequently asked</h2>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <FAQ
-            q="Can I watch all cameras?"
-            a="No. Access is permission-based and scoped to the route cameras nearest your address. This keeps it useful and privacy-respectful."
+            q="What do I get as a resident?"
+            a="Live view of the route cameras closest to your address during the night focus, with simple tools to share context into CPF/HOA channels."
           />
           <FAQ
-            q="Do I get alerts all day?"
-            a="By default, alerts are focused on night-hours (22:00–04:00). We can adjust the window for special needs on request."
+            q="Do I get phone push notifications?"
+            a="Push notifications are reserved for vetted CPF patrollers. Residents use the app’s live view and event banners during 23:00–04:00."
           />
           <FAQ
-            q="Who can get access?"
-            a="Residents in the coverage area, CPF leaders under an MoU, and vetted security partners may receive scoped access."
+            q="Who verifies access?"
+            a="Access is linked to your verified residential address. The community/HOA and Ghosthome team approve and scope it."
           />
           <FAQ
-            q="Are my views tracked?"
-            a="Yes. Activity is logged and incident clips/bookmarks are released only by authorised officers on lawful request."
+            q="How is privacy handled?"
+            a="POPIA-aware by design: privacy masks, scoped roles, logged access, and controlled exports through authorised officers only."
           />
         </div>
       </section>
 
-      {/* CTA STRIP — final push */}
+      {/* CTA STRIP */}
       <section className="mt-12 rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
         <div className="flex flex-col items-start justify-between gap-3 md:flex-row md:items-center">
           <div>
@@ -279,6 +288,22 @@ export default function SecureStreet() {
 }
 
 /* ---------- Small UI helpers ---------- */
+
+function MediaCard({ children, label, note, kind = "image" }) {
+  return (
+    <figure className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+      <div className="aspect-video w-full overflow-hidden rounded-b-none">
+        {children}
+      </div>
+      <figcaption className="px-3 py-2">
+        <div className="text-xs font-semibold text-slate-900">{label}</div>
+        <div className="text-[11px] text-slate-600">
+          {kind === "video" ? <span className="inline-flex items-center gap-1"><PlayCircle className="h-3.5 w-3.5" /> {note}</span> : note}
+        </div>
+      </figcaption>
+    </figure>
+  );
+}
 
 function Benefit({ icon, text }) {
   return (

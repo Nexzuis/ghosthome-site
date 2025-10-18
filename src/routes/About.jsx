@@ -28,7 +28,7 @@ export default function About() {
             <p className="mt-3 text-slate-700">
               Ghosthome started because alarms were loud but blind. We built a system that can{" "}
               <span className="font-semibold">see</span> and <span className="font-semibold">act</span>:
-              street-first cameras, clever human analytics, and night alerts that residents actually notice.
+              street-first cameras, human-centric analytics, and a focused night window so residents actually notice.
               Today we work with CPFs/HOAs and security partners to <span className="font-semibold">virtually close</span>{" "}
               neighbourhoods — responsibly and at scale.
             </p>
@@ -38,7 +38,7 @@ export default function About() {
               <ul className="mt-2 space-y-2 text-sm text-emerald-900">
                 <li className="flex items-start gap-2">
                   <Target className="mt-0.5 h-4 w-4" />
-                  <span><span className="font-semibold">Aim: nearly every street corner</span> in your area watched — approaches, crossings, and cut-throughs.</span>
+                  <span><span className="font-semibold">Aim: near-every street corner</span> in your area — approaches, crossings, cut-throughs.</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <LineChart className="mt-0.5 h-4 w-4" />
@@ -46,17 +46,17 @@ export default function About() {
                 </li>
                 <li className="flex items-start gap-2">
                   <Clock className="mt-0.5 h-4 w-4" />
-                  <span><span className="font-semibold">Night alerts (22:00–04:00 by default)</span>, tuned for attention — not noise.</span>
+                  <span><span className="font-semibold">Night focus (23:00–04:00)</span> tuned for attention — not noise.</span>
                 </li>
               </ul>
             </div>
 
             <ul className="mt-5 grid gap-3 sm:grid-cols-2">
               <Point icon={<Camera />} text="Street-first: entrances, routes & corners" />
-              <Point icon={<ScanEye />} text="Clever human analytics (no FR)" />
-              <Point icon={<BellRing />} text="Resident alerts with snapshot at night" />
-              <Point icon={<Users />} text="Partner monitoring with audit trails" />
-              <Point icon={<Lock />} text="POPIA-aware: privacy masks, no audio, logged access" />
+              <Point icon={<ScanEye />} text="Human-centric analytics (no facial recognition)" />
+              <Point icon={<BellRing />} text="Residents use live view at night; CPF patrollers may receive clip notifications" />
+              <Point icon={<Users />} text="Security partners monitor with context & audit trails" />
+              <Point icon={<Lock />} text="POPIA-aware: privacy masks, no audio, logged access & controlled exports" />
             </ul>
           </div>
 
@@ -64,12 +64,13 @@ export default function About() {
           <aside className="rounded-2xl border border-slate-200 bg-white p-5">
             <h3 className="text-lg font-bold text-slate-900">What a “virtual closure” means</h3>
             <p className="mt-1 text-sm text-slate-700">
-              No booms. We design a pole-grid so cameras watch the ways in/out and across your area. Residents see what matters at night; partners can monitor; incidents are quicker to detect, verify and escalate.
+              No booms. We design a pole-grid so cameras watch the ways in/out and across your area.
+              Residents get live view in the night window; partners can monitor; incidents are quicker to detect, verify and escalate.
             </p>
             <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <Metric label="Street corners" value="Most/near-all" note="phased by priority" />
+              <Metric label="Street corners" value="Most / near-all" note="phased by priority" />
               <Metric label="Cameras" value="2× per pole" note="both directions" />
-              <Metric label="Alert window" value="22:00–04:00" note="customisable" />
+              <Metric label="Night window" value="23:00–04:00" note="customisable" />
             </div>
             <p className="mt-3 text-xs text-slate-500">
               Final design after route survey & community input. We adapt as patterns change.
@@ -88,7 +89,7 @@ export default function About() {
           <Step
             icon={<RouteIcon className="h-6 w-6" />}
             title="Design the grid"
-            text="We map entrances/exits, crossings, and common walk-throughs. Poles are placed to see public space without filming into homes."
+            text="We map entrances/exits, crossings and common walk-throughs. Poles are placed to see public space without filming into homes."
           />
           <Step
             icon={<Camera className="h-6 w-6" />}
@@ -98,21 +99,21 @@ export default function About() {
           <Step
             icon={<ScanEye className="h-6 w-6" />}
             title="Enable analytics"
-            text="Human-centric detection + line-crossing rules. Snapshot in the alert so residents verify in seconds."
+            text="Human detection with virtual lines & zones for entries/lanes. Appearance cues for search. Snapshot in alerts for quick verify."
           />
           <Step
             icon={<BellRing className="h-6 w-6" />}
             title="Alert & escalate"
-            text="Residents get night alerts; security partners receive context to prioritise and respond quickly. We adapt coverage as hotspots emerge."
+            text="Residents use live view during 23:00–04:00. Vetted CPF patrollers may receive clip notifications. Partners prioritise and respond with context."
           />
         </div>
       </section>
 
       {/* VALUE FOR RESIDENTS & PARTNERS */}
       <section className="mt-12 grid gap-6 md:grid-cols-2">
-        <Card title="For Residents" badge="Live view + focused night alerts">
+        <Card title="For Residents" badge="Live view + focused night window">
           <List items={[
-            "Choose nearby route cameras; get person-movement alerts at night (22:00–04:00 default).",
+            "Choose nearby route cameras; live view during 23:00–04:00.",
             "Snapshot + quick live view = faster verification.",
             "Indoor chime to wake lightly; optional external siren link.",
             "Clear route-based reporting to CPF/HOA and armed response.",
@@ -121,7 +122,7 @@ export default function About() {
         <Card title="For Security Partners" badge="Context, not noise">
           <List items={[
             "Scoped, lawful access for control room/patrols.",
-            "Context-rich call-outs by route/corner; faster prioritisation.",
+            "Virtual lines & zones, loiter/time-in-area, vehicle & appearance cues.",
             "Evidence bookmarks & exports via Information Officer on lawful request.",
             "Full audit trail to support SLAs and community trust.",
           ]}/>
@@ -133,7 +134,7 @@ export default function About() {
         <Info
           icon={<Lightbulb />}
           title="Connectivity that keeps up"
-          text="We validate Wi-Fi per pole and specify mesh/4G where needed. Stable links mean faster alerts and clearer streams."
+          text="We validate Wi-Fi at each pole and specify mesh/4G where needed. Stable links mean faster alerts and clearer streams."
           bullets={["Wi-Fi survey & mesh guidance", "Optional 4G for edge poles", "Bitrate tuned per location"]}
         />
         <Info
@@ -148,18 +149,10 @@ export default function About() {
       <section className="mt-12">
         <h2 className="text-xl font-semibold text-slate-900">Bring Ghosthome to your neighbourhood</h2>
         <ol className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <PlayStep n="1" title="Intro & map">
-            Share hotspots and routes. We sense-check feasibility and scale.
-          </PlayStep>
-          <PlayStep n="2" title="Street survey">
-            Confirm pole points, power & connectivity; draft phased plan.
-          </PlayStep>
-          <PlayStep n="3" title="Community brief">
-            Coverage, POPIA, partner roles, resident plans — clear and simple.
-          </PlayStep>
-          <PlayStep n="4" title="Phase 1 install">
-            Priority corners go live. Analytics alert. Partners onboard for monitoring.
-          </PlayStep>
+          <PlayStep n="1" title="Intro & map">Share hotspots and routes. We sense-check feasibility and scale.</PlayStep>
+          <PlayStep n="2" title="Street survey">Confirm pole points, power & connectivity; draft phased plan.</PlayStep>
+          <PlayStep n="3" title="Community brief">Coverage, POPIA, partner roles, resident plans — clear and simple.</PlayStep>
+          <PlayStep n="4" title="Phase 1 install">Priority corners go live. Analytics alert. Partners onboard for monitoring.</PlayStep>
         </ol>
 
         <div className="mt-5 flex flex-wrap gap-3">
@@ -189,10 +182,22 @@ export default function About() {
       <section className="mt-12 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
         <h2 className="text-xl font-semibold text-slate-900">Common questions</h2>
         <div className="mt-4 grid gap-3 md:grid-cols-2">
-          <Faq q="Is this POPIA-compliant?" a="Yes. Cameras on private property aimed at public streets/sidewalks; permanent privacy masks; logged resident access; live-view only for residents; exports via IO on lawful request; signage on entry points." />
-          <Faq q="Do you really cover almost every corner?" a="That’s the goal. We phase installs, then adapt. If a hotspot pops up, we shift/add a pole. The grid evolves with your area." />
-          <Faq q="What will I receive at home?" a="Live view of selected route cameras and human-detection alerts at night (22:00–04:00 default). You’ll get a snapshot and can jump to live view immediately." />
-          <Faq q="How do we start?" a="Reach out with a map. We’ll propose a phased plan with clear roles for residents, CPF/HOA and partners." />
+          <Faq
+            q="Is this POPIA-compliant?"
+            a="Yes. Cameras on private property aimed at public streets/sidewalks; permanent privacy masks; scoped, logged resident access; live view for residents; exports via the Information Officer on lawful request; signage on entry points."
+          />
+          <Faq
+            q="Do you really cover almost every corner?"
+            a="That’s the goal. We phase installs, then adapt. If a hotspot pops up, we shift/add a pole. The grid evolves with your area."
+          />
+          <Faq
+            q="What will I receive at home?"
+            a="Live view of selected route cameras during the night focus (23:00–04:00). Vetted CPF patrollers may receive clip notifications for verified incidents."
+          />
+          <Faq
+            q="How do we start?"
+            a="Reach out with a map. We’ll propose a phased plan with clear roles for residents, CPF/HOA and partners."
+          />
         </div>
       </section>
     </main>

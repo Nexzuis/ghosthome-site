@@ -12,19 +12,17 @@ import {
   Moon,
   Home,
   Car,
-  Sparkles,
   Camera,
   FileText,
   CheckCircle2,
 } from "lucide-react";
 
 /**
- * Contact — Street-first theme to match Home
- * - Community Street-Camera Network as the primary focus
- * - Smart Home Systems as a secondary offering (clearly separated)
- * - Keeps mailto submit (no backend)
- * - Subtle gradient accents + hover lift, same as Home/Hero styling
- * - No new libraries beyond framer-motion (already imported)
+ * Contact — aligned with Home / Secure Street / Partners
+ * - Residents: permission-based LIVE VIEW; CPF may receive clip notifications
+ * - Night focus: 23:00–04:00
+ * - Street-first + Smart Home secondary
+ * - Mailto submit (no backend)
  */
 export default function Contact() {
   // Form state
@@ -36,12 +34,11 @@ export default function Contact() {
     message: "",
   });
 
-  // Interactive toggles (included in email subject/body)
+  // Toggles (appended into email subject/body)
   const [projectType, setProjectType] = useState("street"); // street | home
   const [power, setPower] = useState("wired"); // wired | wirefree
   const [mode, setMode] = useState("night"); // day | night
   const [contactPref, setContactPref] = useState("whatsapp"); // whatsapp | email
-
   const [sending, setSending] = useState(false);
 
   const onChange = (e) => {
@@ -88,14 +85,14 @@ export default function Contact() {
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-10">
-      {/* STREET HERO — subtle emerald energy like Home */}
+      {/* STREET HERO */}
       <section className="relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-10">
         {/* soft glow accents */}
         <div className="pointer-events-none absolute -top-24 -left-16 h-72 w-72 rounded-full bg-emerald-200/30 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-28 -right-12 h-80 w-80 rounded-full bg-emerald-100/40 blur-3xl" />
 
         <div className="relative grid gap-8 md:grid-cols-2">
-          {/* LEFT: street-first explainer (aligned with Home copy) */}
+          {/* LEFT: street-first explainer */}
           <div>
             <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200">
               <Camera className="h-4 w-4" />
@@ -105,23 +102,27 @@ export default function Contact() {
               Safer streets through shared visibility & partner escalation
             </h1>
             <p className="mt-2 text-slate-700">
-              Tell us about your street or area. Residents receive route access and focused night alerts (22:00–04:00).
-              CPF leaders coordinate. Security partners escalate with context for faster response.
+              Tell us about your area. Residents receive{" "}
+              <span className="font-semibold">permission-based live view</span> of nearby route cameras with a night
+              focus of <span className="font-semibold">23:00–04:00</span>. CPF leaders coordinate; security partners
+              escalate and respond with context for faster outcomes.{" "}
+              <span className="font-semibold">Vetted CPF patrollers may receive clip notifications</span>; residents use
+              live view.
             </p>
 
-            {/* Small credibility strip (mirrors Home tone) */}
+            {/* Credibility strip */}
             <ul className="mt-4 grid gap-2 text-sm text-slate-700 sm:grid-cols-3">
               <li className="flex items-center gap-2">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                Night alerts (22:00–04:00)
+                Night focus (23:00–04:00)
               </li>
               <li className="flex items-center gap-2">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                Shareable snapshots & clips
+                Shareable snapshots & live view
               </li>
               <li className="flex items-center gap-2">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                Transparent audit trail
+                POPIA-aware & fully audited
               </li>
             </ul>
 
@@ -130,26 +131,26 @@ export default function Contact() {
               <MiniStep
                 icon={<ScanEye className="h-5 w-5" />}
                 title="Detect"
-                text="Poles cover routes & entrances; AI focuses on people/vehicles."
+                text="Poles cover routes & entrances. AI flags people/vehicles that matter."
               />
               <MiniStep
                 icon={<BellRing className="h-5 w-5" />}
-                title="Alert"
-                text="WhatsApp with snapshot + short clip to the right residents."
+                title="Focus"
+                text="23:00–04:00 night window. Residents use live view; vetted CPF patrollers may receive clips."
               />
               <MiniStep
                 icon={<RouteIcon className="h-5 w-5" />}
                 title="Review"
-                text="Bookmarks help you trace movement across adjoining streets."
+                text="Bookmarks help trace movement across adjoining streets and share context quickly."
               />
               <MiniStep
                 icon={<Shield className="h-5 w-5" />}
                 title="Escalate"
-                text="Partners get context for prioritised, faster response."
+                text="Partners get context-rich call-outs for prioritised, faster response."
               />
             </div>
 
-            {/* Quick contacts strip (hover lift) */}
+            {/* Quick contact buttons */}
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
               <a
                 href="https://wa.me/27794950855"
@@ -170,7 +171,7 @@ export default function Contact() {
             </div>
           </div>
 
-          {/* RIGHT: the form */}
+          {/* RIGHT: enquiry form */}
           <div className="rounded-2xl border border-slate-200 bg-white p-4">
             <form onSubmit={handleSubmit} className="space-y-3">
               <div className="grid gap-3 sm:grid-cols-2">
@@ -211,7 +212,7 @@ export default function Contact() {
                 />
               </div>
 
-              {/* Toggles (street-first defaults) */}
+              {/* Toggles */}
               <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                 <div className="grid gap-3 sm:grid-cols-2">
                   <ToggleGroup
@@ -280,7 +281,7 @@ export default function Contact() {
 
               {/* POPIA note */}
               <p className="text-xs text-slate-500">
-                We respect POPIA. We’ll only use your details to respond to your enquiry. Privacy signage available on request.
+                We respect POPIA. Your details are used only to respond to your enquiry. Privacy signage available on request.
               </p>
 
               <div className="pt-2">
@@ -303,38 +304,37 @@ export default function Contact() {
         </div>
       </section>
 
-      {/* Trust strip (mirrors Home tone) */}
+      {/* Trust strip */}
       <section className="mt-10">
         <div className="grid gap-3 sm:grid-cols-3">
           <TrustItem
             icon={<BellRing className="h-5 w-5" />}
-            title="Night alerts only (22:00–04:00)"
-            text="Less noise, more attention when it matters."
+            title="Night focus (23:00–04:00)"
+            text="Attention stays on what matters after dark."
           />
           <TrustItem
             icon={<Camera className="h-5 w-5" />}
-            title="Push notifications"
-            text="Give neighbours & partners instant alerts."
+            title="Scoped live view"
+            text="Permission-based access to nearby route cameras."
           />
           <TrustItem
             icon={<FileText className="h-5 w-5" />}
             title="Transparent audit trail"
-            text="Bookmarks & exports keep everyone accountable."
+            text="Logged access; exports controlled under POPIA."
           />
         </div>
       </section>
 
-      {/* Divider between Street (core) and Home (side) */}
+      {/* Divider between Street (core) and Home (secondary) */}
       <div className="my-14 h-px w-full bg-slate-200" aria-hidden="true"></div>
 
-      {/* SMART HOME SYSTEMS — secondary offering, aligned with Home */}
+      {/* SMART HOME (secondary) */}
       <section aria-labelledby="smart-home" className="mt-6">
         <h2 id="smart-home" className="text-xl font-semibold text-slate-900">
           We also do Smart Home Systems
         </h2>
         <p className="mt-2 text-slate-600">
-          Add connected cameras and automations at home: indoor chimes, spotlights, and simple “if person → do X”
-          routines using reliable, mainstream gear.
+          Add connected cameras and automations at home: indoor chimes, spotlights, and simple “if person → do X” routines using reliable, mainstream gear.
         </p>
 
         <div className="mt-6 grid gap-4 sm:grid-cols-3">
@@ -367,7 +367,7 @@ export default function Contact() {
           />
         </div>
 
-        {/* Mini features row (keeps page lively) */}
+        {/* Mini features row */}
         <div className="mt-10 grid gap-3 sm:grid-cols-3">
           <MiniCard
             icon={<Lightbulb className="h-5 w-5" />}
