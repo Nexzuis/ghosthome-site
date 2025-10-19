@@ -18,7 +18,7 @@ export default function Terms() {
         </h1>
         <p className="mt-2 text-slate-600">
           These terms govern how approved residents may use the community CCTV live-view service during the{" "}
-          <strong>22:00–04:00</strong> window (adjustable on request). They work together with our{" "}
+          <strong>23:00–04:00</strong> window (adjustable on request). They work together with our{" "}
           <Link to="/privacy" className="text-emerald-700 underline">Privacy Notice (POPIA)</Link>.
         </p>
       </header>
@@ -79,7 +79,7 @@ export default function Terms() {
         <Section title="2) Service scope & operating window">
           <List items={[
             "Live-view only: no timeline/archive and no exports from resident accounts.",
-            "Night window by default: 22:00–04:00 (customisable on request for special needs).",
+            "Night window by default: 23:00–04:00 (customisable on request for special needs).",
             "PTZ control is disabled for residents unless explicitly authorised in writing."
           ]}/>
         </Section>

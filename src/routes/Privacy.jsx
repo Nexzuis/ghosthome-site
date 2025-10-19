@@ -103,7 +103,7 @@ export default function Privacy() {
                 </tr>
               </thead>
               <tbody>
-                <Row t="CCTV programme" r="Community safety, incident response; resident live-view 22:00–04:00; evidence on lawful request"
+                <Row t="CCTV programme" r="Community safety, incident response; resident live-view 23:00–04:00; evidence on lawful request"
                      n="Legitimate/public interest in safety; legal obligation for lawful disclosures" />
                 <Row t="Account & billing" r="Manage subscriptions, invoices, payments, service notices"
                      n="Contract; legal obligation (tax/accounting)" />
@@ -213,7 +213,7 @@ export default function Privacy() {
         {/* CCTV TRANSPARENCY */}
         <Section title="11) The CCTV programme (extra transparency)">
           <ul className="list-disc pl-6 text-slate-700">
-            <li><span className="font-semibold">Operating window:</span> resident live-view <span className="font-semibold">22:00–04:00</span> by default (adjustable on request).</li>
+            <li><span className="font-semibold">Operating window:</span> resident live-view <span className="font-semibold">23:00–04:00</span> by default (adjustable on request).</li>
             <li><span className="font-semibold">Access controls:</span> live-view only (no timeline, no export, no PTZ) for residents. All activity is logged. Misuse leads to removal and may be reported to the Regulator/PSiRA (if applicable).</li>
             <li><span className="font-semibold">Placement & masking:</span> cameras on private property view public streets/sidewalks; permanent privacy masks prevent filming into private areas.</li>
             <li><span className="font-semibold">No audio & no facial recognition.</span> AI may classify events (person/vehicle) without biometric identification.</li>

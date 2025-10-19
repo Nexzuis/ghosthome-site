@@ -47,7 +47,7 @@ export default function CommunityStreetPackages() {
           bullets={[
             "Live view to 2 nearby route cameras",
             "1 account (single user)",
-            "Night viewing window: 22:00–04:00",
+            "Night viewing window: 23:00–04:00",
             "No timeline export; activity is logged",
           ]}
         />
@@ -58,7 +58,7 @@ export default function CommunityStreetPackages() {
           bullets={[
             "Live view to 4 nearby/route cameras",
             "2 accounts (e.g., you + partner)",
-            "Night viewing window: 22:00–04:00",
+            "Night viewing window: 23:00–04:00",
             "No timeline export; activity is logged",
           ]}
           highlight

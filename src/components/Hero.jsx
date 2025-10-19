@@ -31,7 +31,7 @@ export default function Hero() {
           </p>
 
           <ul className="mt-4 space-y-2 text-sm text-slate-700">
-            <li className="flex items-start gap-2"><span className="mt-2 h-1.5 w-1.5 rounded-full bg-emerald-500" /> Night alerts focus (22:00–04:00) so you only get what matters</li>
+            <li className="flex items-start gap-2"><span className="mt-2 h-1.5 w-1.5 rounded-full bg-emerald-500" /> Night alerts focus (23:00–04:00) so you only get what matters</li>
             <li className="flex items-start gap-2"><span className="mt-2 h-1.5 w-1.5 rounded-full bg-emerald-500" /> Shareable snapshots & clips for neighbours and partners</li>
             <li className="flex items-start gap-2"><span className="mt-2 h-1.5 w-1.5 rounded-full bg-emerald-500" /> Transparent audit trail keeps everyone accountable</li>
           </ul>
