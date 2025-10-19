@@ -23,6 +23,7 @@ export default function Footer() {
         <p className="text-center text-sm text-slate-600">
           © 2025 Ghosthome
         </p>
+        <Analytics />
       </div>
     </footer>
   );
