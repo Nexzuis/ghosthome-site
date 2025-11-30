@@ -118,6 +118,39 @@ async function sendMail(signupId, db) {
   }
 }
 
+async function sendErrorMail(error) {
+  const mailgun = new Mailgun(FormData);
+  const mg = mailgun.client({
+    username: "api",
+    key: process.env.MAILGUN_API_KEY,
+    url: "https://api.eu.mailgun.net"
+  });
+
+  try {
+    const data = await mg.messages.create("ghosthome.co.za", {
+      from: "Ghosthome Welcome <welcome@ghosthome.co.za>",
+      to: ['nielzietsman@gmail.com'],
+      subject: error.message || "PayFast ITN Error",
+      html: 
+        `<html>
+        <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        <style type="text/css" style="display:none;"> P {margin-top:0;margin-bottom:0;} </style>
+        </head>
+        <body dir="ltr">
+        <pre>${JSON.stringify(error, null, 2)}</pre>
+        </body>
+        </html>
+        `
+      }
+    );
+
+    console.log(data);
+  } catch (error) {
+    console.log(error);
+  }
+}
+
 export default async function handler(req, res) {
   try {
     const db = await getDb();
@@ -177,6 +210,7 @@ export default async function handler(req, res) {
     req.on("error", () => res.status(200).send("OK"));
   } catch (error) {
     console.log(error);
+    await sendErrorMail(error);
     res.status(200).send("OK");
   }
 
