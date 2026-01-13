@@ -190,6 +190,16 @@ export default async function handler(req, res) {
     const calc = md5(base).toLowerCase();
     const ok = posted === calc;
 
+    let emailSent = false;
+    let existing = await db.query({
+      text: 'SELECT * FROM signups WHERE id = $1 LIMIT 1',
+      values: [signupId]
+    });
+    if (existing.rowCount == 1) {
+      existing = existing.rows[0];
+      emailSent = existing.pf_payment_status === 'complete';
+    }
+
     log = await db.query({
       text:
         `UPDATE signups
@@ -203,7 +213,7 @@ export default async function handler(req, res) {
       ]
     });
 
-    if (paymentStatus === 'complete') {
+    if (paymentStatus === 'complete' && !emailSent) {
       await sendMail(signupId, db);
     }
 
